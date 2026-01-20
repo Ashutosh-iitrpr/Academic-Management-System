@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Patch, Param } from "@nestjs/common";
+import { Controller, Post, Body, Patch, Param, Get } from "@nestjs/common";
 import { UsersService } from "./users.service";
 import { CreateUserDto } from "./dto/create-user.dto";
 import { UseGuards } from "@nestjs/common";
@@ -17,10 +17,21 @@ export class UsersController {
     return this.usersService.createUser(dto);
   }
 
+  @Get()
+  getAllUsers() {
+    // TODO: Implement actual user retrieval
+    return this.usersService.getAllUsers();
+  }
+
   
   // 👇 ADD THIS
   @Patch(":id/deactivate")
   deactivate(@Param("id") id: string) {
     return this.usersService.deactivateUser(id);
+  }
+
+  @Patch(":id/activate")
+  activate(@Param("id") id: string) {
+    return this.usersService.activateUser(id);
   }
 }
