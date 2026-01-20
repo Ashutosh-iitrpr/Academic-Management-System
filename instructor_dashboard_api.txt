@@ -1,0 +1,149 @@
+Instructor Dashboard API Documentation
+Academic Management System (Backend)
+
+All APIs require:
+Authorization: Bearer <INSTRUCTOR_JWT>
+Content-Type: application/json
+
+--------------------------------------------------
+1. Instructor Profile
+--------------------------------------------------
+GET /auth/me
+
+Response:
+{
+  "id": "uuid",
+  "name": "Dr. ABC",
+  "email": "abc@iit.edu",
+  "role": "INSTRUCTOR"
+}
+
+--------------------------------------------------
+2. Course Offering Management
+--------------------------------------------------
+
+2.1 Request a Course Offering
+POST /instructor/course-offerings
+
+Body:
+{
+  "courseId": "uuid",
+  "semester": "Spring 2026",
+  "timeSlot": "PC2",
+  "allowedBranches": ["CSB", "MEB"]
+}
+
+Response:
+{
+  "id": "offeringId",
+  "status": "PENDING_ADMIN"
+}
+
+2.2 View Own Course Offerings
+GET /instructor/course-offerings
+
+Response:
+[
+  {
+    "id": "offeringId",
+    "semester": "Spring 2026",
+    "timeSlot": "PC2",
+    "status": "ENROLLING",
+    "course": {
+      "code": "MA202",
+      "name": "Linear Algebra",
+      "credits": 4
+    }
+  }
+]
+
+2.3 Finalize Course Offering
+POST /instructor/course-offerings/:offeringId/finalize
+
+--------------------------------------------------
+3. Enrollment Management
+--------------------------------------------------
+
+3.1 View Pending Enrollment Requests
+GET /instructor/enrollments/pending
+
+3.2 Approve Enrollment
+PATCH /instructor/enrollments/:enrollmentId/approve
+
+3.3 Reject Enrollment
+PATCH /instructor/enrollments/:enrollmentId/reject
+
+--------------------------------------------------
+4. Auto Enrollment (Core Courses)
+--------------------------------------------------
+
+POST /instructor/enrollments/triggers
+
+Body:
+{
+  "courseOfferingId": "uuid",
+  "branchCode": "CSB",
+  "batchYear": "2023",
+  "enrollmentType": "CREDIT"
+}
+
+--------------------------------------------------
+5. Unified Enrollment View
+--------------------------------------------------
+
+GET /instructor/course-offerings/:offeringId/enrollments
+
+--------------------------------------------------
+6. Grade Management
+--------------------------------------------------
+
+POST /instructor/course-offerings/:offeringId/grades
+
+Body:
+{
+  "grades": [
+    {
+      "enrollmentId": "uuid",
+      "grade": "A"
+    }
+  ]
+}
+
+Grades Allowed:
+A, A-, B, B-, C, C-, D, E, F
+
+--------------------------------------------------
+7. Feedback Management
+--------------------------------------------------
+
+7.1 Open Feedback Form
+POST /instructor/course-offerings/:offeringId/feedback-forms
+
+Body:
+{
+  "title": "Mid-semester Feedback",
+  "description": "Optional"
+}
+
+7.2 Close Feedback Form
+PATCH /instructor/feedback-forms/:formId/close
+
+7.3 View Feedback Results
+GET /instructor/course-offerings/:offeringId/feedback-results
+
+--------------------------------------------------
+8. Academic Calendar (Read-only)
+--------------------------------------------------
+
+GET /admin/academic-calendar/instructor
+
+Response:
+{
+  "enrollmentStart": "YYYY-MM-DD",
+  "enrollmentEnd": "YYYY-MM-DD",
+  "dropDeadline": "YYYY-MM-DD",
+  "auditDeadline": "YYYY-MM-DD"
+}
+
+--------------------------------------------------
+End of Document

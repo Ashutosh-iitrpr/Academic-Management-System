@@ -1,0 +1,218 @@
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "windows"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  STUDENT
+  INSTRUCTOR
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  role      Role
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  entryNumber String? @unique
+
+  enrollments Enrollment[]
+  enrollmentTriggers EnrollmentTrigger[]
+  courseOfferings CourseOffering[]
+  otpTokens OtpToken[]
+
+  feedbackForms    FeedbackForm[]
+  feedbackResponses CourseFeedback[]
+}
+
+model OtpToken {
+  id        String   @id @default(uuid())
+  otpHash   String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+}
+
+model AcademicCalendar {
+  id                     String   @id @default(uuid())
+
+  // Semester information
+  semesterName           String   // e.g., "Spring 2026", "Fall 2025"
+  semesterStartDate      DateTime // Start date of the semester
+  semesterEndDate        DateTime // End date of the semester
+
+  // Enrollment period
+  enrollmentStart        DateTime
+  enrollmentEnd          DateTime
+
+  // Important deadlines
+  dropDeadline           DateTime
+  auditDeadline          DateTime
+
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+}
+
+enum CourseOfferingStatus {
+  PENDING
+  ENROLLING
+  REJECTED
+  WITHDRAWN
+  COMPLETED
+}
+
+model Course {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  name      String
+  credits   Int
+
+  offerings CourseOffering[]
+
+  createdAt DateTime @default(now())
+}
+
+model CourseOffering {
+  id            String               @id @default(uuid())
+
+  courseId      String
+  course        Course               @relation(fields: [courseId], references: [id])
+
+  instructorId  String
+  instructor    User                 @relation(fields: [instructorId], references: [id])
+
+  semester      String
+  timeSlot      String
+
+  allowedBranches String[]
+  status        CourseOfferingStatus @default(PENDING)
+
+  enrollments Enrollment[]
+  enrollmentTriggers EnrollmentTrigger[]
+
+  approvedAt    DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime             @default(now())
+
+  feedbackForms FeedbackForm[]
+}
+
+enum EnrollmentStatus {
+  PENDING_INSTRUCTOR
+  ENROLLED
+  REJECTED
+  DROPPED
+  AUDIT
+  COMPLETED
+}
+
+enum EnrollmentType {
+  CREDIT
+  CREDIT_CONCENTRATION
+  CREDIT_MINOR
+}
+
+model Enrollment {
+  id               String            @id @default(uuid())
+
+  studentId        String
+  student          User              @relation(fields: [studentId], references: [id])
+
+  courseOfferingId String
+  courseOffering   CourseOffering    @relation(fields: [courseOfferingId], references: [id])
+
+  status           EnrollmentStatus
+  enrollmentType   EnrollmentType
+
+  grade            Grade?
+  completedAt      DateTime?
+
+  source           EnrollmentSource
+  createdAt        DateTime          @default(now())
+  approvedAt       DateTime?
+}
+
+enum EnrollmentSource {
+  STUDENT_REQUEST
+  INSTRUCTOR_ASSIGNED
+}
+
+model EnrollmentTrigger {
+  id                String          @id @default(uuid())
+
+  courseOfferingId  String
+  courseOffering    CourseOffering  @relation(fields: [courseOfferingId], references: [id])
+
+  branchCode        String          // e.g. CSB
+  batchYear         Int             // e.g. 2023
+
+  enrollmentType    EnrollmentType
+
+  instructorId      String
+  instructor        User            @relation(fields: [instructorId], references: [id])
+
+  createdAt         DateTime        @default(now())
+
+  @@unique([courseOfferingId, branchCode, batchYear])
+}
+
+enum Grade {
+  A
+  A_MINUS
+  B
+  B_MINUS
+  C
+  C_MINUS
+  D
+  E
+  F
+}
+
+model FeedbackForm {
+  id               String   @id @default(uuid())
+  courseOfferingId String
+  instructorId     String
+
+  title            String?
+  description      String?
+
+  isOpen           Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  closedAt         DateTime?
+
+  courseOffering   CourseOffering @relation(fields: [courseOfferingId], references: [id])
+  instructor       User           @relation(fields: [instructorId], references: [id])
+
+  responses        CourseFeedback[]
+
+  @@index([courseOfferingId])
+}
+
+model CourseFeedback {
+  id             String   @id @default(uuid())
+  feedbackFormId String
+  studentId      String
+
+  ratingContent    Int
+  ratingTeaching   Int
+  ratingEvaluation Int
+  ratingOverall    Int
+
+  comments       String?
+  createdAt      DateTime @default(now())
+
+  feedbackForm   FeedbackForm @relation(fields: [feedbackFormId], references: [id])
+  student        User         @relation(fields: [studentId], references: [id])
+
+  @@unique([feedbackFormId, studentId])
+}
