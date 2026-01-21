@@ -115,38 +115,33 @@ let AdminController = class AdminController {
             },
         ];
     }
-    getTranscriptByEntry(entryNumber) {
-        return {
-            student: {
-                id: "1",
-                name: "John Doe",
-                email: "john@example.com",
+    async getTranscriptByEntry(entryNumber) {
+        const student = await this.prisma.user.findFirst({
+            where: {
                 entryNumber: entryNumber,
-                branch: "Computer Science",
+                role: 'STUDENT',
             },
-            cgpa: 8.5,
-            totalCredits: 120,
-            semesters: [
-                {
-                    semester: "Fall 2024",
-                    sgpa: 8.7,
-                    courses: [
-                        {
-                            code: "CS101",
-                            name: "Introduction to Programming",
-                            credits: 4,
-                            grade: "A",
+            include: {
+                enrollments: {
+                    include: {
+                        courseOffering: {
+                            include: {
+                                course: true,
+                                instructor: {
+                                    select: {
+                                        name: true,
+                                    },
+                                },
+                            },
                         },
-                        {
-                            code: "CS102",
-                            name: "Data Structures",
-                            credits: 4,
-                            grade: "A-",
-                        },
-                    ],
+                    },
                 },
-            ],
-        };
+            },
+        });
+        if (!student) {
+            throw new common_1.NotFoundException('Student not found with this entry number');
+        }
+        return student;
     }
     async getCourseEnrollments(courseId) {
         return this.prisma.enrollment.findMany({
@@ -251,7 +246,7 @@ __decorate([
     __param(0, (0, common_1.Param)("entryNumber")),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], AdminController.prototype, "getTranscriptByEntry", null);
 __decorate([
     (0, common_1.Get)("courses/:courseId/enrollments"),

@@ -78,7 +78,8 @@ export class CourseOfferingsService {
         where: { status: "PENDING" },
         include: {
         course: true,
-        instructor: { select: { name: true, email: true } },
+        instructor: { select: { id: true, name: true, email: true } },
+        enrollments: true,
         },
         orderBy: { createdAt: "asc" },
     });

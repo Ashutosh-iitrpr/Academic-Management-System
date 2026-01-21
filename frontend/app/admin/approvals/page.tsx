@@ -147,7 +147,6 @@ const ApprovalsPage = () => {
                       <TableCell sx={{ fontWeight: 700 }}>Course</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Instructor Name</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Instructor Email</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Enrolled Students</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Submission Date</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Actions</TableCell>
                     </TableRow>
@@ -174,13 +173,6 @@ const ApprovalsPage = () => {
                           <Typography sx={{ fontSize: '0.9rem', color: '#666' }}>
                             {offering.instructor.email}
                           </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={`${offering.enrollments.length} Students`}
-                            size="small"
-                            variant="outlined"
-                          />
                         </TableCell>
                         <TableCell>
                           <Typography sx={{ fontSize: '0.9rem', color: '#999' }}>
@@ -241,16 +233,6 @@ const ApprovalsPage = () => {
                 </Typography>
               </CardContent>
             </Card>
-            <Card sx={{ flex: 1 }}>
-              <CardContent>
-                <Typography color="textSecondary" gutterBottom>
-                  Total Enrolled Students
-                </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                  {offerings.reduce((sum, o) => sum + o.enrollments.length, 0)}
-                </Typography>
-              </CardContent>
-            </Card>
           </Box>
         </Box>
 
@@ -282,14 +264,6 @@ const ApprovalsPage = () => {
                   </Typography>
                   <Typography sx={{ fontSize: '0.9rem', color: '#999' }}>
                     {selectedOffering.instructor.email}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#666' }}>
-                    Enrolled Students
-                  </Typography>
-                  <Typography sx={{ fontWeight: 500 }}>
-                    {selectedOffering.enrollments.length} students
                   </Typography>
                 </Box>
                 <Box>

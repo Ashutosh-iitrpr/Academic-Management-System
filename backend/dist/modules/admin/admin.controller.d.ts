@@ -12,7 +12,6 @@ export declare class AdminController {
         auditDeadline: string;
     }): import("@prisma/client").Prisma.Prisma__AcademicCalendarClient<{
         id: string;
-        createdAt: Date;
         semesterName: string;
         semesterStartDate: Date;
         semesterEndDate: Date;
@@ -20,6 +19,7 @@ export declare class AdminController {
         enrollmentEnd: Date;
         dropDeadline: Date;
         auditDeadline: Date;
+        createdAt: Date;
         updatedAt: Date;
     }, never, import("@prisma/client/runtime/library").DefaultArgs, import("@prisma/client").Prisma.PrismaClientOptions>;
     updateCalendar(dto: {
@@ -33,7 +33,6 @@ export declare class AdminController {
     }): import("@prisma/client").Prisma.PrismaPromise<import("@prisma/client").Prisma.BatchPayload>;
     getCalendar(): import("@prisma/client").Prisma.Prisma__AcademicCalendarClient<{
         id: string;
-        createdAt: Date;
         semesterName: string;
         semesterStartDate: Date;
         semesterEndDate: Date;
@@ -41,6 +40,7 @@ export declare class AdminController {
         enrollmentEnd: Date;
         dropDeadline: Date;
         auditDeadline: Date;
+        createdAt: Date;
         updatedAt: Date;
     } | null, null, import("@prisma/client/runtime/library").DefaultArgs, import("@prisma/client").Prisma.PrismaClientOptions>;
     getCalendarForStudent(): import("@prisma/client").Prisma.Prisma__AcademicCalendarClient<{
@@ -78,57 +78,82 @@ export declare class AdminController {
         isActive: boolean;
         createdAt: Date;
     })[];
-    getTranscriptByEntry(entryNumber: string): {
+    getTranscriptByEntry(entryNumber: string): Promise<{
+        enrollments: ({
+            courseOffering: {
+                course: {
+                    id: string;
+                    createdAt: Date;
+                    name: string;
+                    code: string;
+                    credits: number;
+                };
+                instructor: {
+                    name: string;
+                };
+            } & {
+                id: string;
+                createdAt: Date;
+                status: import("@prisma/client").$Enums.CourseOfferingStatus;
+                completedAt: Date | null;
+                approvedAt: Date | null;
+                courseId: string;
+                instructorId: string;
+                semester: string;
+                timeSlot: string;
+                allowedBranches: string[];
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            status: import("@prisma/client").$Enums.EnrollmentStatus;
+            studentId: string;
+            courseOfferingId: string;
+            enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
+            grade: import("@prisma/client").$Enums.Grade | null;
+            completedAt: Date | null;
+            source: import("@prisma/client").$Enums.EnrollmentSource;
+            approvedAt: Date | null;
+        })[];
+    } & {
+        id: string;
+        createdAt: Date;
+        name: string;
+        email: string;
+        role: import("@prisma/client").$Enums.Role;
+        isActive: boolean;
+        entryNumber: string | null;
+    }>;
+    getCourseEnrollments(courseId: string): Promise<({
         student: {
             id: string;
             name: string;
             email: string;
-            entryNumber: string;
-            branch: string;
+            entryNumber: string | null;
         };
-        cgpa: number;
-        totalCredits: number;
-        semesters: {
-            semester: string;
-            sgpa: number;
-            courses: {
-                code: string;
-                name: string;
-                credits: number;
-                grade: string;
-            }[];
-        }[];
-    };
-    getCourseEnrollments(courseId: string): Promise<({
         courseOffering: {
+            id: string;
             course: {
                 name: string;
                 code: string;
             };
-            id: string;
             semester: string;
             instructor: {
-                name: string;
                 id: string;
+                name: string;
             };
-        };
-        student: {
-            name: string;
-            email: string;
-            entryNumber: string | null;
-            id: string;
         };
     } & {
         id: string;
         createdAt: Date;
         status: import("@prisma/client").$Enums.EnrollmentStatus;
-        approvedAt: Date | null;
-        completedAt: Date | null;
+        studentId: string;
         courseOfferingId: string;
         enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
-        studentId: string;
         grade: import("@prisma/client").$Enums.Grade | null;
+        completedAt: Date | null;
         source: import("@prisma/client").$Enums.EnrollmentSource;
+        approvedAt: Date | null;
     })[]>;
     updateCourse(courseId: string, dto: {
         name?: string;
@@ -136,9 +161,9 @@ export declare class AdminController {
         credits?: number;
         description?: string;
     }): Promise<{
-        name: string;
         id: string;
         createdAt: Date;
+        name: string;
         code: string;
         credits: number;
     }>;

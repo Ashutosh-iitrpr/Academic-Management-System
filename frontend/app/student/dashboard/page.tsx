@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Grid, Box, Card, CardContent, Typography, Button, Alert, Table, TableBody, TableCell, TableHead, TableRow, Chip } from '@mui/material';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import ProtectedRoute from '@/lib/routes/ProtectedRoute';
@@ -59,6 +60,7 @@ interface AcademicStats {
 
 const StudentDashboard = () => {
   const { user } = useAuth();
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [enrollments, setEnrollments] = useState<DisplayEnrollment[]>([]);
@@ -355,56 +357,72 @@ const StudentDashboard = () => {
           {/* Quick Links */}
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6} md={3}>
-              <Card sx={{ border: '2px dashed #8B3A3A', backgroundColor: '#fafafa', cursor: 'pointer', '&:hover': { backgroundColor: '#f0f0f0' } }}>
-                <CardContent sx={{ textAlign: 'center' }}>
-                  <DescriptionIcon sx={{ fontSize: 40, color: '#8B3A3A', mb: 1 }} />
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-                    View Transcript
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: '#666' }}>
-                    Download your transcript
-                  </Typography>
-                </CardContent>
-              </Card>
+              <Box onClick={() => router.push('/student/record')} sx={{ textDecoration: 'none' }}>
+                <Card 
+                  sx={{ border: '2px dashed #8B3A3A', backgroundColor: '#fafafa', cursor: 'pointer', '&:hover': { backgroundColor: '#f0f0f0' }, height: '100%' }}
+                >
+                  <CardContent sx={{ textAlign: 'center' }}>
+                    <DescriptionIcon sx={{ fontSize: 40, color: '#8B3A3A', mb: 1 }} />
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                      View Transcript
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#666' }}>
+                      Download your transcript
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Box>
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
-              <Card sx={{ border: '2px dashed #D4A574', backgroundColor: '#fafafa', cursor: 'pointer', '&:hover': { backgroundColor: '#f0f0f0' } }}>
-                <CardContent sx={{ textAlign: 'center' }}>
-                  <ChatIcon sx={{ fontSize: 40, color: '#D4A574', mb: 1 }} />
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-                    Feedback Forms
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: '#666' }}>
-                    Provide course feedback
-                  </Typography>
-                </CardContent>
-              </Card>
+              <Box onClick={() => router.push('/student/feedback')} sx={{ textDecoration: 'none' }}>
+                <Card 
+                  sx={{ border: '2px dashed #D4A574', backgroundColor: '#fafafa', cursor: 'pointer', '&:hover': { backgroundColor: '#f0f0f0' }, height: '100%' }}
+                >
+                  <CardContent sx={{ textAlign: 'center' }}>
+                    <ChatIcon sx={{ fontSize: 40, color: '#D4A574', mb: 1 }} />
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                      Feedback Forms
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#666' }}>
+                      Provide course feedback
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Box>
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
-              <Card sx={{ border: '2px dashed #8B3A3A', backgroundColor: '#fafafa', cursor: 'pointer', '&:hover': { backgroundColor: '#f0f0f0' } }}>
-                <CardContent sx={{ textAlign: 'center' }}>
-                  <AssignmentIcon sx={{ fontSize: 40, color: '#8B3A3A', mb: 1 }} />
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-                    Academic Record
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: '#666' }}>
-                    View your academic record
-                  </Typography>
-                </CardContent>
-              </Card>
+              <Box onClick={() => router.push('/student/enrollments')} sx={{ textDecoration: 'none' }}>
+                <Card 
+                  sx={{ border: '2px dashed #8B3A3A', backgroundColor: '#fafafa', cursor: 'pointer', '&:hover': { backgroundColor: '#f0f0f0' }, height: '100%' }}
+                >
+                  <CardContent sx={{ textAlign: 'center' }}>
+                    <AssignmentIcon sx={{ fontSize: 40, color: '#8B3A3A', mb: 1 }} />
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                      My Enrollments
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#666' }}>
+                      View your enrollments
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Box>
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
-              <Card sx={{ border: '2px dashed #D4A574', backgroundColor: '#fafafa', cursor: 'pointer', '&:hover': { backgroundColor: '#f0f0f0' } }}>
-                <CardContent sx={{ textAlign: 'center' }}>
-                  <SchoolIcon sx={{ fontSize: 40, color: '#D4A574', mb: 1 }} />
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-                    Course Catalog
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: '#666' }}>
-                    Browse all courses
-                  </Typography>
-                </CardContent>
-              </Card>
+              <Box onClick={() => router.push('/courses')} sx={{ textDecoration: 'none' }}>
+                <Card 
+                  sx={{ border: '2px dashed #D4A574', backgroundColor: '#fafafa', cursor: 'pointer', '&:hover': { backgroundColor: '#f0f0f0' }, height: '100%' }}
+                >
+                  <CardContent sx={{ textAlign: 'center' }}>
+                    <SchoolIcon sx={{ fontSize: 40, color: '#D4A574', mb: 1 }} />
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                      Course Catalog
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#666' }}>
+                      Browse all courses
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Box>
             </Grid>
           </Grid>
         </Box>

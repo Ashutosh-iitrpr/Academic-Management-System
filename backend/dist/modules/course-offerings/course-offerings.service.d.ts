@@ -5,10 +5,10 @@ export declare class CourseOfferingsService {
     constructor(prisma: PrismaService);
     getForStudent(courseCode?: string): Promise<({
         course: {
-            name: string;
             id: string;
             createdAt: Date;
             code: string;
+            name: string;
             credits: number;
         };
         instructor: {
@@ -16,20 +16,20 @@ export declare class CourseOfferingsService {
         };
     } & {
         id: string;
-        createdAt: Date;
         courseId: string;
+        instructorId: string;
         semester: string;
         timeSlot: string;
         allowedBranches: string[];
-        instructorId: string;
         status: import("@prisma/client").$Enums.CourseOfferingStatus;
         approvedAt: Date | null;
         completedAt: Date | null;
+        createdAt: Date;
     })[]>;
     getForInstructor(instructorId: string): Promise<({
         course: {
-            name: string;
             code: string;
+            name: string;
             credits: number;
         };
         _count: {
@@ -37,98 +37,111 @@ export declare class CourseOfferingsService {
         };
     } & {
         id: string;
-        createdAt: Date;
         courseId: string;
+        instructorId: string;
         semester: string;
         timeSlot: string;
         allowedBranches: string[];
-        instructorId: string;
         status: import("@prisma/client").$Enums.CourseOfferingStatus;
         approvedAt: Date | null;
         completedAt: Date | null;
+        createdAt: Date;
     })[]>;
     requestOffering(instructorId: string, dto: RequestOfferingDto): Promise<{
         id: string;
-        createdAt: Date;
         courseId: string;
+        instructorId: string;
         semester: string;
         timeSlot: string;
         allowedBranches: string[];
-        instructorId: string;
         status: import("@prisma/client").$Enums.CourseOfferingStatus;
         approvedAt: Date | null;
         completedAt: Date | null;
+        createdAt: Date;
     }>;
     getPendingOfferings(): Promise<({
         course: {
-            name: string;
             id: string;
             createdAt: Date;
             code: string;
+            name: string;
             credits: number;
         };
         instructor: {
+            id: string;
             name: string;
             email: string;
         };
+        enrollments: {
+            id: string;
+            status: import("@prisma/client").$Enums.EnrollmentStatus;
+            approvedAt: Date | null;
+            completedAt: Date | null;
+            createdAt: Date;
+            studentId: string;
+            courseOfferingId: string;
+            enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
+            grade: import("@prisma/client").$Enums.Grade | null;
+            source: import("@prisma/client").$Enums.EnrollmentSource;
+        }[];
     } & {
         id: string;
-        createdAt: Date;
         courseId: string;
+        instructorId: string;
         semester: string;
         timeSlot: string;
         allowedBranches: string[];
-        instructorId: string;
         status: import("@prisma/client").$Enums.CourseOfferingStatus;
         approvedAt: Date | null;
         completedAt: Date | null;
+        createdAt: Date;
     })[]>;
     approveOffering(offeringId: string): Promise<{
         id: string;
-        createdAt: Date;
         courseId: string;
+        instructorId: string;
         semester: string;
         timeSlot: string;
         allowedBranches: string[];
-        instructorId: string;
         status: import("@prisma/client").$Enums.CourseOfferingStatus;
         approvedAt: Date | null;
         completedAt: Date | null;
+        createdAt: Date;
     }>;
     rejectOffering(offeringId: string): Promise<{
         id: string;
-        createdAt: Date;
         courseId: string;
+        instructorId: string;
         semester: string;
         timeSlot: string;
         allowedBranches: string[];
-        instructorId: string;
         status: import("@prisma/client").$Enums.CourseOfferingStatus;
         approvedAt: Date | null;
         completedAt: Date | null;
+        createdAt: Date;
     }>;
     withdrawOffering(offeringId: string): Promise<{
         id: string;
-        createdAt: Date;
         courseId: string;
+        instructorId: string;
         semester: string;
         timeSlot: string;
         allowedBranches: string[];
-        instructorId: string;
         status: import("@prisma/client").$Enums.CourseOfferingStatus;
         approvedAt: Date | null;
         completedAt: Date | null;
+        createdAt: Date;
     }>;
     finalizeOffering(instructorId: string, courseOfferingId: string): Promise<{
         id: string;
-        createdAt: Date;
         courseId: string;
+        instructorId: string;
         semester: string;
         timeSlot: string;
         allowedBranches: string[];
-        instructorId: string;
         status: import("@prisma/client").$Enums.CourseOfferingStatus;
         approvedAt: Date | null;
         completedAt: Date | null;
+        createdAt: Date;
     }>;
 }

@@ -29,14 +29,10 @@ import SearchIcon from '@mui/icons-material/Search';
 import DownloadIcon from '@mui/icons-material/Download';
 import PrintIcon from '@mui/icons-material/Print';
 
-interface Grade {
-  grade: string;
-  createdAt: string;
-}
-
 interface Enrollment {
   id: string;
   status: string;
+  grade?: string;
   courseOffering: {
     course: {
       name: string;
@@ -45,7 +41,6 @@ interface Enrollment {
     };
     instructor: { name: string };
   };
-  grades: Grade[];
 }
 
 interface StudentTranscript {
@@ -328,11 +323,11 @@ const TranscriptLookupPage = () => {
                               />
                             </TableCell>
                             <TableCell>
-                              {enrollment.grades && enrollment.grades.length > 0 ? (
+                              {enrollment.grade ? (
                                 <Chip
-                                  label={enrollment.grades[0].grade}
+                                  label={enrollment.grade}
                                   sx={{
-                                    backgroundColor: getGradeColor(enrollment.grades[0].grade),
+                                    backgroundColor: getGradeColor(enrollment.grade),
                                     color: '#fff',
                                     fontWeight: 700,
                                   }}

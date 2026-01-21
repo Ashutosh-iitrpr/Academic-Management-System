@@ -6,6 +6,7 @@ import {
   Patch,
   Post,
   UseGuards,
+  NotFoundException,
 } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
@@ -143,41 +144,37 @@ export class AdminController {
     ];
   }
 
-  // 📝 Get Transcript by Entry Number (MOCK DATA)
+  // 📝 Get Transcript by Entry Number
   @Get("transcript/entry/:entryNumber")
-  getTranscriptByEntry(@Param("entryNumber") entryNumber: string) {
-    // TODO: Implement actual transcript lookup by entry number
-    return {
-      student: {
-        id: "1",
-        name: "John Doe",
-        email: "john@example.com",
+  async getTranscriptByEntry(@Param("entryNumber") entryNumber: string) {
+    const student = await this.prisma.user.findFirst({
+      where: {
         entryNumber: entryNumber,
-        branch: "Computer Science",
+        role: 'STUDENT',
       },
-      cgpa: 8.5,
-      totalCredits: 120,
-      semesters: [
-        {
-          semester: "Fall 2024",
-          sgpa: 8.7,
-          courses: [
-            {
-              code: "CS101",
-              name: "Introduction to Programming",
-              credits: 4,
-              grade: "A",
+      include: {
+        enrollments: {
+          include: {
+            courseOffering: {
+              include: {
+                course: true,
+                instructor: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
             },
-            {
-              code: "CS102",
-              name: "Data Structures",
-              credits: 4,
-              grade: "A-",
-            },
-          ],
+          },
         },
-      ],
-    };
+      },
+    });
+
+    if (!student) {
+      throw new NotFoundException('Student not found with this entry number');
+    }
+
+    return student;
   }
 
   // 📚 Get Course Enrollments
