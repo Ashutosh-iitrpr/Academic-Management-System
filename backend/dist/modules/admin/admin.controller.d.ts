@@ -12,6 +12,7 @@ export declare class AdminController {
         auditDeadline: string;
     }): import("@prisma/client").Prisma.Prisma__AcademicCalendarClient<{
         id: string;
+        createdAt: Date;
         semesterName: string;
         semesterStartDate: Date;
         semesterEndDate: Date;
@@ -19,7 +20,6 @@ export declare class AdminController {
         enrollmentEnd: Date;
         dropDeadline: Date;
         auditDeadline: Date;
-        createdAt: Date;
         updatedAt: Date;
     }, never, import("@prisma/client/runtime/library").DefaultArgs, import("@prisma/client").Prisma.PrismaClientOptions>;
     updateCalendar(dto: {
@@ -33,6 +33,7 @@ export declare class AdminController {
     }): import("@prisma/client").Prisma.PrismaPromise<import("@prisma/client").Prisma.BatchPayload>;
     getCalendar(): import("@prisma/client").Prisma.Prisma__AcademicCalendarClient<{
         id: string;
+        createdAt: Date;
         semesterName: string;
         semesterStartDate: Date;
         semesterEndDate: Date;
@@ -40,7 +41,6 @@ export declare class AdminController {
         enrollmentEnd: Date;
         dropDeadline: Date;
         auditDeadline: Date;
-        createdAt: Date;
         updatedAt: Date;
     } | null, null, import("@prisma/client/runtime/library").DefaultArgs, import("@prisma/client").Prisma.PrismaClientOptions>;
     getCalendarForStudent(): import("@prisma/client").Prisma.Prisma__AcademicCalendarClient<{
@@ -61,30 +61,54 @@ export declare class AdminController {
         pendingApprovals: number;
         activeSemesters: number;
     }>;
-    getAllUsers(): ({
-        id: string;
+    getAllUsers(): Promise<{
         name: string;
         email: string;
-        role: string;
-        entryNumber: string;
+        role: import("@prisma/client").$Enums.Role;
+        entryNumber: string | null;
+        id: string;
         isActive: boolean;
         createdAt: Date;
-    } | {
-        id: string;
+    }[]>;
+    createUser(dto: {
         name: string;
         email: string;
-        role: string;
-        entryNumber: null;
+        role: "STUDENT" | "INSTRUCTOR" | "ADMIN";
+        entryNumber?: string;
+    }): Promise<{
+        name: string;
+        email: string;
+        role: import("@prisma/client").$Enums.Role;
+        entryNumber: string | null;
+        id: string;
         isActive: boolean;
         createdAt: Date;
-    })[];
+    }>;
+    deactivateUser(id: string): Promise<{
+        name: string;
+        email: string;
+        role: import("@prisma/client").$Enums.Role;
+        entryNumber: string | null;
+        id: string;
+        isActive: boolean;
+        createdAt: Date;
+    }>;
+    activateUser(id: string): Promise<{
+        name: string;
+        email: string;
+        role: import("@prisma/client").$Enums.Role;
+        entryNumber: string | null;
+        id: string;
+        isActive: boolean;
+        createdAt: Date;
+    }>;
     getTranscriptByEntry(entryNumber: string): Promise<{
         enrollments: ({
             courseOffering: {
                 course: {
+                    name: string;
                     id: string;
                     createdAt: Date;
-                    name: string;
                     code: string;
                     credits: number;
                 };
@@ -94,66 +118,66 @@ export declare class AdminController {
             } & {
                 id: string;
                 createdAt: Date;
-                status: import("@prisma/client").$Enums.CourseOfferingStatus;
-                completedAt: Date | null;
-                approvedAt: Date | null;
                 courseId: string;
-                instructorId: string;
                 semester: string;
                 timeSlot: string;
                 allowedBranches: string[];
+                instructorId: string;
+                status: import("@prisma/client").$Enums.CourseOfferingStatus;
+                approvedAt: Date | null;
+                completedAt: Date | null;
             };
         } & {
             id: string;
             createdAt: Date;
             status: import("@prisma/client").$Enums.EnrollmentStatus;
-            studentId: string;
+            approvedAt: Date | null;
+            completedAt: Date | null;
             courseOfferingId: string;
+            studentId: string;
             enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
             grade: import("@prisma/client").$Enums.Grade | null;
-            completedAt: Date | null;
             source: import("@prisma/client").$Enums.EnrollmentSource;
-            approvedAt: Date | null;
         })[];
     } & {
-        id: string;
-        createdAt: Date;
         name: string;
         email: string;
         role: import("@prisma/client").$Enums.Role;
-        isActive: boolean;
         entryNumber: string | null;
+        id: string;
+        isActive: boolean;
+        createdAt: Date;
     }>;
     getCourseEnrollments(courseId: string): Promise<({
-        student: {
-            id: string;
-            name: string;
-            email: string;
-            entryNumber: string | null;
-        };
         courseOffering: {
-            id: string;
             course: {
                 name: string;
                 code: string;
             };
+            id: string;
             semester: string;
             instructor: {
-                id: string;
                 name: string;
+                id: string;
             };
+        };
+        student: {
+            name: string;
+            email: string;
+            entryNumber: string | null;
+            id: string;
         };
     } & {
         id: string;
         createdAt: Date;
         status: import("@prisma/client").$Enums.EnrollmentStatus;
-        studentId: string;
+        approvedAt: Date | null;
+        completedAt: Date | null;
         courseOfferingId: string;
+        studentId: string;
         enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
         grade: import("@prisma/client").$Enums.Grade | null;
-        completedAt: Date | null;
         source: import("@prisma/client").$Enums.EnrollmentSource;
-        approvedAt: Date | null;
     })[]>;
     updateCourse(courseId: string, dto: {
         name?: string;
@@ -161,9 +185,9 @@ export declare class AdminController {
         credits?: number;
         description?: string;
     }): Promise<{
+        name: string;
         id: string;
         createdAt: Date;
-        name: string;
         code: string;
         credits: number;
     }>;

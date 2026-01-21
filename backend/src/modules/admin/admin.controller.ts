@@ -118,30 +118,89 @@ export class AdminController {
     };
   }
 
-  // 👥 Get All Users (MOCK DATA)
+  // 👥 Get All Users from Database
   @Get("users")
-  getAllUsers() {
-    // TODO: Implement actual user list from database
-    return [
-      {
-        id: "1",
-        name: "John Doe",
-        email: "john@example.com",
-        role: "STUDENT",
-        entryNumber: "2024CS001",
+  async getAllUsers() {
+    return this.prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        entryNumber: true,
         isActive: true,
-        createdAt: new Date(),
+        createdAt: true,
       },
-      {
-        id: "2",
-        name: "Jane Smith",
-        email: "jane@example.com",
-        role: "INSTRUCTOR",
-        entryNumber: null,
-        isActive: true,
-        createdAt: new Date(),
-      },
-    ];
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
+  // ➕ Create User
+  @Post("users")
+  async createUser(@Body() dto: {
+    name: string;
+    email: string;
+    role: "STUDENT" | "INSTRUCTOR" | "ADMIN";
+    entryNumber?: string;
+  }) {
+    // Validate student must have entryNumber
+    if (dto.role === "STUDENT" && !dto.entryNumber) {
+      throw new NotFoundException("Entry number is required for students");
+    }
+
+    // Non-students must NOT have entryNumber
+    if (dto.role !== "STUDENT" && dto.entryNumber) {
+      throw new NotFoundException("Only students can have entry numbers");
+    }
+
+    try {
+      return await this.prisma.user.create({
+        data: {
+          name: dto.name,
+          email: dto.email,
+          role: dto.role,
+          entryNumber: dto.role === "STUDENT" ? dto.entryNumber : null,
+        },
+      });
+    } catch (error) {
+      throw new NotFoundException(
+        "User with this email or entry number already exists"
+      );
+    }
+  }
+
+  // 🔒 Deactivate User
+  @Patch("users/:id/deactivate")
+  async deactivateUser(@Param("id") id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+
+    return this.prisma.user.update({
+      where: { id },
+      data: { isActive: false },
+    });
+  }
+
+  // ✅ Activate User
+  @Patch("users/:id/activate")
+  async activateUser(@Param("id") id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+
+    return this.prisma.user.update({
+      where: { id },
+      data: { isActive: true },
+    });
   }
 
   // 📝 Get Transcript by Entry Number
