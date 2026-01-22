@@ -109,8 +109,10 @@ const GradeUpload = () => {
       // Fetch enrollments for this offering
       const enrollmentData = await instructorApi.getEnrollmentsList(offeringId);
 
-      // Filter only enrolled students (not pending, rejected, or dropped)
-      const enrolledOnly = enrollmentData.filter(e => e.status === 'APPROVED' || e.status === 'ENROLLED');
+      // Filter only enrolled students (ENROLLED, AUDIT, COMPLETED - exclude pending, rejected, dropped)
+      const enrolledOnly = enrollmentData.filter(e => 
+        e.status === 'ENROLLED' || e.status === 'AUDIT' || e.status === 'COMPLETED'
+      );
 
       setEnrollments(enrolledOnly);
 

@@ -422,7 +422,7 @@ const StudentEnrollmentsPage = () => {
                         </TableCell>
                         <TableCell>
                           {enrollment.grade ? (
-                            <Chip label={enrollment.grade} color="success" size="small" />
+                            <Chip label={enrollment.grade.replace('_MINUS', '-')} color="success" size="small" />
                           ) : (
                             '-'
                           )}
@@ -516,7 +516,7 @@ const StudentEnrollmentsPage = () => {
                         <Typography variant="subtitle2" color="textSecondary">
                           Grade
                         </Typography>
-                        <Chip label={selectedEnrollment.grade} color="success" size="small" />
+                        <Chip label={selectedEnrollment.grade.replace('_MINUS', '-')} color="success" size="small" />
                       </Grid>
                     )}
                     <Grid item xs={6}>

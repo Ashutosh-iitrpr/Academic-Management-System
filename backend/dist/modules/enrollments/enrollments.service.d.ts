@@ -2,7 +2,7 @@ import { PrismaService } from "../../prisma/prisma.service";
 import { Grade } from "@prisma/client";
 import { RequestEnrollmentDto } from "./dto/request-enrollment.dto";
 import { CreateEnrollmentTriggerDto } from "./dto/create-enrollment-trigger.dto";
-import { AcademicCalendarService } from "src/common/services/academic-calendar.service";
+import { AcademicCalendarService } from "../../common/services/academic-calendar.service";
 export declare class EnrollmentsService {
     private prisma;
     private academicCalendarService;

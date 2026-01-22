@@ -756,7 +756,7 @@ const InstructorEnrollments = () => {
                                   <TableCell>
                                     {enrollment.grade ? (
                                       <Chip
-                                        label={enrollment.grade}
+                                        label={enrollment.grade.replace('_MINUS', '-')}
                                         size="small"
                                         sx={{
                                           fontWeight: 700,

@@ -384,16 +384,19 @@ let EnrollmentsService = class EnrollmentsService {
             if (enrollment.courseOfferingId !== courseOfferingId) {
                 throw new common_1.BadRequestException(`Enrollment ${enrollment.id} does not belong to this course offering`);
             }
-            if (enrollment.status !== client_1.EnrollmentStatus.ENROLLED)
-                continue;
-            if (enrollment.grade)
+            const allowedStatuses = [
+                client_1.EnrollmentStatus.ENROLLED,
+                client_1.EnrollmentStatus.AUDIT,
+                client_1.EnrollmentStatus.COMPLETED,
+            ];
+            if (!allowedStatuses.includes(enrollment.status))
                 continue;
             const updated = await this.prisma.enrollment.update({
                 where: { id: enrollment.id },
                 data: {
                     grade: item.grade,
                     status: client_1.EnrollmentStatus.COMPLETED,
-                    completedAt: new Date(),
+                    completedAt: enrollment.completedAt ?? new Date(),
                 },
             });
             results.push(updated.id);

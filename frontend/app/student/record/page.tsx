@@ -382,7 +382,7 @@ const StudentRecordPage = () => {
                                     <TableCell align="center">
                                       {course.grade ? (
                                         <Chip
-                                          label={course.grade.replace('_', '-')}
+                                          label={course.grade.replace('_MINUS', '-')}
                                           size="small"
                                           sx={{
                                             backgroundColor: getGradeColor(course.grade),

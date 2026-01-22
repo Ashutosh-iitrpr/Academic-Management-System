@@ -40,7 +40,8 @@ interface CourseOffering {
   course: { name: string; code: string };
   instructor: { id: string; name: string; email: string };
   status: string;
-  enrollments: Array<{ id: string }>;
+  semester: string;
+  timeSlot: string;
   createdAt: string;
 }
 
@@ -146,7 +147,8 @@ const ApprovalsPage = () => {
                     <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
                       <TableCell sx={{ fontWeight: 700 }}>Course</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Instructor Name</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Instructor Email</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Semester</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Time Slot</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Submission Date</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Actions</TableCell>
                     </TableRow>
@@ -171,7 +173,12 @@ const ApprovalsPage = () => {
                         </TableCell>
                         <TableCell>
                           <Typography sx={{ fontSize: '0.9rem', color: '#666' }}>
-                            {offering.instructor.email}
+                            {offering.semester}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography sx={{ fontSize: '0.9rem', color: '#666' }}>
+                            {offering.timeSlot}
                           </Typography>
                         </TableCell>
                         <TableCell>
@@ -260,10 +267,18 @@ const ApprovalsPage = () => {
                 </Box>
                 <Box>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#666' }}>
-                    Instructor Email
+                    Semester
                   </Typography>
-                  <Typography sx={{ fontSize: '0.9rem', color: '#999' }}>
-                    {selectedOffering.instructor.email}
+                  <Typography sx={{ fontWeight: 500 }}>
+                    {selectedOffering.semester}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#666' }}>
+                    Time Slot
+                  </Typography>
+                  <Typography sx={{ fontWeight: 500 }}>
+                    {selectedOffering.timeSlot}
                   </Typography>
                 </Box>
                 <Box>

@@ -14,7 +14,7 @@ import {
 import { RequestEnrollmentDto } from "./dto/request-enrollment.dto";
 import { CreateEnrollmentTriggerDto } from "./dto/create-enrollment-trigger.dto";
 import { MAX_CREDITS_PER_SEMESTER } from "../../constants/academics.constants";
-import { AcademicCalendarService } from "src/common/services/academic-calendar.service";
+import { AcademicCalendarService } from "../../common/services/academic-calendar.service";
 
 @Injectable()
 export class EnrollmentsService {
@@ -549,15 +549,20 @@ async requestEnrollment(
           `Enrollment ${enrollment.id} does not belong to this course offering`
         );
       }
-      if (enrollment.status !== EnrollmentStatus.ENROLLED) continue;
-      if (enrollment.grade) continue;
+      // Allow grading/updates for active and already completed enrollments
+      const allowedStatuses: EnrollmentStatus[] = [
+        EnrollmentStatus.ENROLLED,
+        EnrollmentStatus.AUDIT,
+        EnrollmentStatus.COMPLETED,
+      ];
+      if (!allowedStatuses.includes(enrollment.status)) continue;
 
       const updated = await this.prisma.enrollment.update({
         where: { id: enrollment.id },
         data: {
           grade: item.grade,
           status: EnrollmentStatus.COMPLETED,
-          completedAt: new Date(),
+          completedAt: enrollment.completedAt ?? new Date(),
         },
       });
 //       console.log(

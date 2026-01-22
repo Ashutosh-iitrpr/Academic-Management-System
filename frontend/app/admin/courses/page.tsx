@@ -58,18 +58,6 @@ interface CreateCourseForm {
   description?: string;
 }
 
-interface StudentEnrollment {
-  id: string;
-  student: {
-    id: string;
-    name: string;
-    email: string;
-    entryNumber: string;
-  };
-  status: string;
-  createdAt: string;
-}
-
 const CoursesPage = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -81,10 +69,6 @@ const CoursesPage = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
-  const [viewEnrollmentsOpen, setViewEnrollmentsOpen] = useState(false);
-  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
-  const [enrollments, setEnrollments] = useState<StudentEnrollment[]>([]);
-  const [loadingEnrollments, setLoadingEnrollments] = useState(false);
   const [formData, setFormData] = useState<CreateCourseForm>({
     name: '',
     code: '',
@@ -245,27 +229,6 @@ const CoursesPage = () => {
     }
   };
 
-  const handleViewEnrollments = async (course: Course) => {
-    try {
-      setLoadingEnrollments(true);
-      setSelectedCourse(course);
-      const response = await axiosClient.get(`/admin/courses/${course.id}/enrollments`);
-      setEnrollments(response.data);
-      setViewEnrollmentsOpen(true);
-    } catch (err) {
-      console.error('Error fetching enrollments:', err);
-      setError('Failed to load enrollments');
-    } finally {
-      setLoadingEnrollments(false);
-    }
-  };
-
-  const handleCloseEnrollmentsDialog = () => {
-    setViewEnrollmentsOpen(false);
-    setSelectedCourse(null);
-    setEnrollments([]);
-  };
-
   if (loading) {
     return (
       <ProtectedRoute requiredRole="ADMIN">
@@ -337,7 +300,6 @@ const CoursesPage = () => {
                       <TableCell sx={{ fontWeight: 700 }}>Code</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Name</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Credits</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Offerings</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Actions</TableCell>
                     </TableRow>
                   </TableHead>
@@ -360,29 +322,6 @@ const CoursesPage = () => {
                           />
                         </TableCell>
                         <TableCell>
-                          <Box sx={{ display: 'flex', gap: 1 }}>
-                            {course.offerings?.map((offering) => (
-                              <Chip
-                                key={offering.id}
-                                label={offering.status}
-                                size="small"
-                                color={
-                                  offering.status === 'APPROVED'
-                                    ? 'success'
-                                    : offering.status === 'PENDING'
-                                    ? 'warning'
-                                    : 'error'
-                                }
-                              />
-                            ))}
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Tooltip title="View Enrollments">
-                            <IconButton size="small" color="primary" onClick={() => handleViewEnrollments(course)}>
-                              <VisibilityIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
                           <Tooltip title="Edit Course">
                             <IconButton size="small" color="primary" onClick={() => handleEditCourse(course)}>
                               <EditIcon fontSize="small" />
@@ -406,35 +345,6 @@ const CoursesPage = () => {
                 </Typography>
                 <Typography variant="h6" sx={{ fontWeight: 700 }}>
                   {courses.length}
-                </Typography>
-              </CardContent>
-            </Card>
-            <Card sx={{ flex: 1, minWidth: '200px' }}>
-              <CardContent>
-                <Typography color="textSecondary" gutterBottom>
-                  Total Offerings
-                </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                  {courses.reduce((sum, c) => sum + (c.offerings?.length || 0), 0)}
-                </Typography>
-              </CardContent>
-            </Card>
-            <Card sx={{ flex: 1, minWidth: '200px' }}>
-              <CardContent>
-                <Typography color="textSecondary" gutterBottom>
-                  Approved Offerings
-                </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                  {courses.reduce((sum, c) => sum + (c.offerings?.filter((o) => o.status === 'APPROVED').length || 0), 0)}
-                </Typography>
-              </CardContent>
-            </Card>
-            <Card sx={{ flex: 1, minWidth: '200px' }}>
-              <CardContent>
-                <Typography color="textSecondary" gutterBottom>
-                  Pending Approvals
-                </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 700 }}>\n                  {courses.reduce((sum, c) => sum + (c.offerings?.filter((o) => o.status === 'PENDING').length || 0), 0)}
                 </Typography>
               </CardContent>
             </Card>
@@ -510,71 +420,7 @@ const CoursesPage = () => {
           </DialogActions>
         </Dialog>
 
-        {/* View Enrollments Dialog */}
-        <Dialog open={viewEnrollmentsOpen} onClose={handleCloseEnrollmentsDialog} maxWidth="md" fullWidth>
-          <DialogTitle sx={{ fontWeight: 700 }}>
-            Student Enrollments - {selectedCourse?.name}
-          </DialogTitle>
-          <DialogContent sx={{ pt: 2 }}>
-            {loadingEnrollments ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-                <CircularProgress />
-              </Box>
-            ) : enrollments.length === 0 ? (
-              <Box sx={{ p: 3, textAlign: 'center' }}>
-                <Typography color="textSecondary">No student enrollments found</Typography>
-              </Box>
-            ) : (
-              <Box sx={{ overflow: 'auto' }}>
-                <Table>
-                  <TableHead>
-                    <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
-                      <TableCell sx={{ fontWeight: 700 }}>Entry Number</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Student Name</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Email</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Enrollment Date</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {enrollments.map((enrollment) => (
-                      <TableRow key={enrollment.id} sx={{ '&:hover': { backgroundColor: '#f9f9f9' } }}>
-                        <TableCell>
-                          <Typography sx={{ fontWeight: 600, color: '#8B3A3A' }}>
-                            {enrollment.student.entryNumber}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography>{enrollment.student.name}</Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography sx={{ fontSize: '0.9rem', color: '#666' }}>
-                            {enrollment.student.email}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={enrollment.status}
-                            size="small"
-                            color={enrollment.status === 'ENROLLED' ? 'success' : 'default'}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Typography sx={{ fontSize: '0.9rem', color: '#999' }}>
-                            {new Date(enrollment.createdAt).toLocaleDateString()}
-                          </Typography>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </Box>
-            )}
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCloseEnrollmentsDialog}>Close</Button>
-          </DialogActions>
-        </Dialog>
+        {/* View Enrollments Dialog - REMOVED */}
       </DashboardLayout>
     </ProtectedRoute>
   );

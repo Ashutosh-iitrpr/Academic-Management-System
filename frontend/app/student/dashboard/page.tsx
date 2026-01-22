@@ -275,7 +275,7 @@ const StudentDashboard = () => {
                           <TableCell>
                             <StatusChip status={enrollment.status as any} size="small" />
                           </TableCell>
-                          <TableCell>{enrollment.grade ? <Chip label={enrollment.grade} variant="outlined" /> : '-'}</TableCell>
+                          <TableCell>{enrollment.grade ? <Chip label={enrollment.grade.replace('_MINUS', '-')} variant="outlined" /> : '-'}</TableCell>
                           <TableCell>
                             <Button size="small" variant="outlined" sx={{ borderColor: '#8B3A3A', color: '#8B3A3A', mr: 1 }} onClick={() => handleDropEnrollment(enrollment.id)}>
                               Drop

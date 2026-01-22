@@ -325,7 +325,7 @@ const TranscriptLookupPage = () => {
                             <TableCell>
                               {enrollment.grade ? (
                                 <Chip
-                                  label={enrollment.grade}
+                                  label={enrollment.grade.replace('_MINUS', '-')}
                                   sx={{
                                     backgroundColor: getGradeColor(enrollment.grade),
                                     color: '#fff',
