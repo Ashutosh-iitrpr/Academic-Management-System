@@ -93,27 +93,64 @@ let AdminController = class AdminController {
             activeSemesters,
         };
     }
-    getAllUsers() {
-        return [
-            {
-                id: "1",
-                name: "John Doe",
-                email: "john@example.com",
-                role: "STUDENT",
-                entryNumber: "2024CS001",
+    async getAllUsers() {
+        return this.prisma.user.findMany({
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+                entryNumber: true,
                 isActive: true,
-                createdAt: new Date(),
+                createdAt: true,
             },
-            {
-                id: "2",
-                name: "Jane Smith",
-                email: "jane@example.com",
-                role: "INSTRUCTOR",
-                entryNumber: null,
-                isActive: true,
-                createdAt: new Date(),
-            },
-        ];
+            orderBy: { createdAt: "desc" },
+        });
+    }
+    async createUser(dto) {
+        if (dto.role === "STUDENT" && !dto.entryNumber) {
+            throw new common_1.NotFoundException("Entry number is required for students");
+        }
+        if (dto.role !== "STUDENT" && dto.entryNumber) {
+            throw new common_1.NotFoundException("Only students can have entry numbers");
+        }
+        try {
+            return await this.prisma.user.create({
+                data: {
+                    name: dto.name,
+                    email: dto.email,
+                    role: dto.role,
+                    entryNumber: dto.role === "STUDENT" ? dto.entryNumber : null,
+                },
+            });
+        }
+        catch (error) {
+            throw new common_1.NotFoundException("User with this email or entry number already exists");
+        }
+    }
+    async deactivateUser(id) {
+        const user = await this.prisma.user.findUnique({
+            where: { id },
+        });
+        if (!user) {
+            throw new common_1.NotFoundException(`User with ID ${id} not found`);
+        }
+        return this.prisma.user.update({
+            where: { id },
+            data: { isActive: false },
+        });
+    }
+    async activateUser(id) {
+        const user = await this.prisma.user.findUnique({
+            where: { id },
+        });
+        if (!user) {
+            throw new common_1.NotFoundException(`User with ID ${id} not found`);
+        }
+        return this.prisma.user.update({
+            where: { id },
+            data: { isActive: true },
+        });
     }
     async getTranscriptByEntry(entryNumber) {
         const student = await this.prisma.user.findFirst({
@@ -239,8 +276,29 @@ __decorate([
     (0, common_1.Get)("users"),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], AdminController.prototype, "getAllUsers", null);
+__decorate([
+    (0, common_1.Post)("users"),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AdminController.prototype, "createUser", null);
+__decorate([
+    (0, common_1.Patch)("users/:id/deactivate"),
+    __param(0, (0, common_1.Param)("id")),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], AdminController.prototype, "deactivateUser", null);
+__decorate([
+    (0, common_1.Patch)("users/:id/activate"),
+    __param(0, (0, common_1.Param)("id")),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], AdminController.prototype, "activateUser", null);
 __decorate([
     (0, common_1.Get)("transcript/entry/:entryNumber"),
     __param(0, (0, common_1.Param)("entryNumber")),

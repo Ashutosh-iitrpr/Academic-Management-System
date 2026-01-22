@@ -13,8 +13,8 @@ export class CreateUserDto {
   @IsEmail()
   email: string;
 
-  @IsEnum(["STUDENT", "INSTRUCTOR"])
-  role: "STUDENT" | "INSTRUCTOR";
+  @IsEnum(["STUDENT", "INSTRUCTOR", "ADMIN"])
+  role: "STUDENT" | "INSTRUCTOR" | "ADMIN";
 
   @IsOptional()
   @Matches(/^[0-9]{4}[A-Z]{2,4}[0-9]+$/, {

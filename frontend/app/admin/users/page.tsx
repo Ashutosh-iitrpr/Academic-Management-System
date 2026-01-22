@@ -23,6 +23,11 @@ import {
   CircularProgress,
   IconButton,
   Tooltip,
+  Radio,
+  RadioGroup,
+  FormControlLabel,
+  FormControl,
+  FormLabel,
 } from '@mui/material';
 import Alert from '@mui/material/Alert';
 import DashboardLayout from '@/components/layout/DashboardLayout';
@@ -454,18 +459,31 @@ const UsersPage = () => {
                                 onChange={(e) => handleInputChange('email', e.target.value)}
                                 disabled={creatingUser}
                               />
-                              <TextField
-                                fullWidth
-                                select
-                                label="Role"
-                                value={formData.role}
-                                onChange={(e) => handleInputChange('role', e.target.value as any)}
-                                disabled={creatingUser}
-                              >
-                                <MenuItem value="STUDENT">Student</MenuItem>
-                                <MenuItem value="INSTRUCTOR">Instructor</MenuItem>
-                                <MenuItem value="ADMIN">Admin</MenuItem>
-                              </TextField>
+                              <FormControl component="fieldset" disabled={creatingUser}>
+                                <FormLabel component="legend" sx={{ fontWeight: 600, color: '#1a1a1a', mb: 1 }}>
+                                  Role
+                                </FormLabel>
+                                <RadioGroup
+                                  value={formData.role}
+                                  onChange={(e) => handleInputChange('role', e.target.value as any)}
+                                >
+                                  <FormControlLabel 
+                                    value="STUDENT" 
+                                    control={<Radio sx={{ color: '#4CAF50', '&.Mui-checked': { color: '#4CAF50' } }} />} 
+                                    label="Student" 
+                                  />
+                                  <FormControlLabel 
+                                    value="INSTRUCTOR" 
+                                    control={<Radio sx={{ color: '#2E5090', '&.Mui-checked': { color: '#2E5090' } }} />} 
+                                    label="Instructor" 
+                                  />
+                                  <FormControlLabel 
+                                    value="ADMIN" 
+                                    control={<Radio sx={{ color: '#8B3A3A', '&.Mui-checked': { color: '#8B3A3A' } }} />} 
+                                    label="Admin" 
+                                  />
+                                </RadioGroup>
+                              </FormControl>
                               {formData.role === 'STUDENT' && (
                                 <TextField
                                   fullWidth
