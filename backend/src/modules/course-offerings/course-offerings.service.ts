@@ -56,6 +56,41 @@ export class CourseOfferingsService {
     });
   }
 
+  async getAllOfferings() {
+    return this.prisma.courseOffering.findMany({
+      where: {
+        status: {
+          in: [
+            CourseOfferingStatus.ENROLLING,
+            CourseOfferingStatus.COMPLETED,
+          ],
+        },
+      },
+      include: {
+        course: {
+          select: {
+            code: true,
+            name: true,
+            credits: true,
+          },
+        },
+        instructor: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
+        _count: {
+          select: { enrollments: true },
+        },
+      },
+      orderBy: [
+        { semester: "desc" },
+        { createdAt: "desc" },
+      ],
+    });
+  }
+
   // ✅ THIS METHOD MUST EXIST
   async requestOffering(
     instructorId: string,

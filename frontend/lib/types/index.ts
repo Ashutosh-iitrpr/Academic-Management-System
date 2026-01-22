@@ -6,6 +6,7 @@ export interface User {
   name: string;
   role: UserRole;
   entryNumber?: string;
+  department?: string;
   branch?: string;
 }
 

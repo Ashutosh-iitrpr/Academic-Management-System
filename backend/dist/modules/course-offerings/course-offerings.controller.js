@@ -37,6 +37,9 @@ let CourseOfferingsController = class CourseOfferingsController {
     finalizeOffering(offeringId, req) {
         return this.courseOfferingsService.finalizeOffering(req.user.userId, offeringId);
     }
+    getAllCourseOfferings() {
+        return this.courseOfferingsService.getAllOfferings();
+    }
     getPendingOfferings() {
         return this.courseOfferingsService.getPendingOfferings();
     }
@@ -85,6 +88,13 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], CourseOfferingsController.prototype, "finalizeOffering", null);
+__decorate([
+    (0, common_1.Get)("instructor/all-course-offerings"),
+    (0, roles_decorator_1.Roles)("INSTRUCTOR"),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], CourseOfferingsController.prototype, "getAllCourseOfferings", null);
 __decorate([
     (0, common_1.Get)("admin/course-offerings"),
     (0, roles_decorator_1.Roles)("ADMIN"),

@@ -15,6 +15,7 @@ export declare class AuthController {
             name: string;
             role: import("@prisma/client").$Enums.Role;
             entryNumber: string | null;
+            department: string | null;
         };
     }>;
     getCurrentUser(req: any): Promise<{
@@ -23,6 +24,7 @@ export declare class AuthController {
         name: string;
         role: import("@prisma/client").$Enums.Role;
         entryNumber: string | null;
+        department: string | null;
         branch: string | null;
     }>;
 }

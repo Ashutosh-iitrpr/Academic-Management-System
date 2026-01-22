@@ -71,6 +71,31 @@ export declare class CourseOfferingsController {
         approvedAt: Date | null;
         completedAt: Date | null;
     }>;
+    getAllCourseOfferings(): Promise<({
+        course: {
+            name: string;
+            code: string;
+            credits: number;
+        };
+        _count: {
+            enrollments: number;
+        };
+        instructor: {
+            name: string;
+            email: string;
+        };
+    } & {
+        id: string;
+        createdAt: Date;
+        courseId: string;
+        semester: string;
+        timeSlot: string;
+        allowedBranches: string[];
+        instructorId: string;
+        status: import("@prisma/client").$Enums.CourseOfferingStatus;
+        approvedAt: Date | null;
+        completedAt: Date | null;
+    })[]>;
     getPendingOfferings(): Promise<({
         course: {
             name: string;
@@ -86,8 +111,8 @@ export declare class CourseOfferingsController {
             approvedAt: Date | null;
             completedAt: Date | null;
             courseOfferingId: string;
-            studentId: string;
             enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
+            studentId: string;
             grade: import("@prisma/client").$Enums.Grade | null;
             source: import("@prisma/client").$Enums.EnrollmentSource;
         }[];

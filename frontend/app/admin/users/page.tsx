@@ -48,7 +48,8 @@ interface User {
   name: string;
   email: string;
   role: string;
-  entrynumber?: string;
+  entryNumber?: string;
+  department?: string;
   isActive: boolean;
   createdAt: string;
 }
@@ -57,7 +58,8 @@ interface CreateUserForm {
   name: string;
   email: string;
   role: 'STUDENT' | 'INSTRUCTOR' | 'ADMIN';
-  entrynumber?: string;
+  entryNumber?: string;
+  department?: string;
 }
 
 const UsersPage = () => {
@@ -71,6 +73,10 @@ const UsersPage = () => {
   const [creatingUser, setCreatingUser] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [departmentDialogOpen, setDepartmentDialogOpen] = useState(false);
+  const [newDepartment, setNewDepartment] = useState('');
+  const [updatingDepartment, setUpdatingDepartment] = useState(false);
   const [formData, setFormData] = useState<CreateUserForm>({
     name: '',
     email: '',
@@ -108,7 +114,7 @@ const UsersPage = () => {
         (u) =>
           u.name.toLowerCase().includes(search.toLowerCase()) ||
           u.email.toLowerCase().includes(search.toLowerCase()) ||
-          (u.entrynumber && u.entrynumber.toLowerCase().includes(search.toLowerCase()))
+          (u.entryNumber && u.entryNumber.toLowerCase().includes(search.toLowerCase()))
       );
     }
 
@@ -147,6 +153,49 @@ const UsersPage = () => {
     }
   };
 
+  const handleEditDepartment = (user: User) => {
+    if (user.role !== 'INSTRUCTOR') {
+      setError('Only instructors can have departments');
+      return;
+    }
+    setEditingUser(user);
+    setNewDepartment(user.department || '');
+    setDepartmentDialogOpen(true);
+  };
+
+  const handleUpdateDepartment = async () => {
+    if (!editingUser || !newDepartment.trim()) {
+      setError('Department cannot be empty');
+      return;
+    }
+
+    try {
+      setUpdatingDepartment(true);
+      setError('');
+      await axiosClient.patch(`/admin/users/${editingUser.id}/department`, {
+        department: newDepartment,
+      });
+      setSuccess('Department updated successfully');
+      setDepartmentDialogOpen(false);
+      setEditingUser(null);
+      setNewDepartment('');
+      setTimeout(() => setSuccess(''), 3000);
+      fetchUsers();
+    } catch (error: any) {
+      const errorMsg = error?.response?.data?.message || 'Failed to update department';
+      console.error('Error updating department:', error);
+      setError(errorMsg);
+    } finally {
+      setUpdatingDepartment(false);
+    }
+  };
+
+  const handleCloseDepartmentDialog = () => {
+    setDepartmentDialogOpen(false);
+    setEditingUser(null);
+    setNewDepartment('');
+  };
+
   const handleOpenDialog = () => {
     setFormData({
       name: '',
@@ -181,7 +230,7 @@ const UsersPage = () => {
       setError('Email is required');
       return false;
     }
-    if (formData.role === 'STUDENT' && !formData.entrynumber?.trim()) {
+    if (formData.role === 'STUDENT' && !formData.entryNumber?.trim()) {
       setError('Entry number is required for students');
       return false;
     }
@@ -202,7 +251,11 @@ const UsersPage = () => {
       };
 
       if (formData.role === 'STUDENT') {
-        payload.entryNumber = formData.entrynumber;
+        payload.entryNumber = formData.entryNumber;
+      }
+
+      if (formData.role === 'INSTRUCTOR' && formData.department) {
+        payload.department = formData.department;
       }
 
       const response = await axiosClient.post('/admin/users', payload);
@@ -319,6 +372,7 @@ const UsersPage = () => {
                       <TableCell sx={{ fontWeight: 700 }}>Email</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Role</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Entry Number</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Department</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Actions</TableCell>
                     </TableRow>
@@ -343,7 +397,8 @@ const UsersPage = () => {
                             size="small"
                           />
                         </TableCell>
-                        <TableCell>{user.entrynumber || '-'}</TableCell>
+                        <TableCell>{user.entryNumber || '-'}</TableCell>
+                        <TableCell>{user.department || '-'}</TableCell>
                         <TableCell>
                           <Chip
                             label={user.isActive ? 'Active' : 'Inactive'}
@@ -352,11 +407,17 @@ const UsersPage = () => {
                           />
                         </TableCell>
                         <TableCell>
-                          <Tooltip title="Edit">
-                            <IconButton size="small" color="primary">
-                              <EditIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
+                          {user.role === 'INSTRUCTOR' && (
+                            <Tooltip title="Edit Department">
+                              <IconButton
+                                size="small"
+                                color="primary"
+                                onClick={() => handleEditDepartment(user)}
+                              >
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
                           {user.isActive ? (
                             <Tooltip title="Deactivate">
                               <IconButton
@@ -489,8 +550,18 @@ const UsersPage = () => {
                                   fullWidth
                                   label="Entry Number"
                                   placeholder="e.g., CS2024001"
-                                  value={formData.entrynumber || ''}
-                                  onChange={(e) => handleInputChange('entrynumber', e.target.value)}
+                                  value={formData.entryNumber || ''}
+                                  onChange={(e) => handleInputChange('entryNumber', e.target.value)}
+                                  disabled={creatingUser}
+                                />
+                              )}
+                              {formData.role === 'INSTRUCTOR' && (
+                                <TextField
+                                  fullWidth
+                                  label="Department"
+                                  placeholder="e.g., Computer Science"
+                                  value={formData.department || ''}
+                                  onChange={(e) => handleInputChange('department', e.target.value)}
                                   disabled={creatingUser}
                                 />
                               )}
@@ -507,6 +578,52 @@ const UsersPage = () => {
                               disabled={creatingUser}
                             >
                               {creatingUser ? <CircularProgress size={24} /> : 'Create User'}
+                            </Button>
+                          </DialogActions>
+                        </Dialog>
+
+                        {/* Department Edit Dialog */}
+                        <Dialog open={departmentDialogOpen} onClose={handleCloseDepartmentDialog} maxWidth="sm" fullWidth>
+                          <DialogTitle>Update Instructor Department</DialogTitle>
+                          <DialogContent sx={{ pt: 2 }}>
+                            {error && (
+                              <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
+                                {error}
+                              </Alert>
+                            )}
+                            {success && (
+                              <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess('')}>
+                                {success}
+                              </Alert>
+                            )}
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                              <TextField
+                                fullWidth
+                                label="Instructor Name"
+                                value={editingUser?.name || ''}
+                                disabled
+                              />
+                              <TextField
+                                fullWidth
+                                label="Current Department"
+                                value={newDepartment}
+                                onChange={(e) => setNewDepartment(e.target.value)}
+                                placeholder="e.g., Computer Science, Mathematics"
+                                disabled={updatingDepartment}
+                              />
+                            </Box>
+                          </DialogContent>
+                          <DialogActions>
+                            <Button onClick={handleCloseDepartmentDialog} disabled={updatingDepartment}>
+                              Cancel
+                            </Button>
+                            <Button
+                              variant="contained"
+                              sx={{ backgroundColor: '#8B3A3A' }}
+                              onClick={handleUpdateDepartment}
+                              disabled={updatingDepartment}
+                            >
+                              {updatingDepartment ? <CircularProgress size={24} /> : 'Update'}
                             </Button>
                           </DialogActions>
                         </Dialog>

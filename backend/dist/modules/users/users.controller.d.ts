@@ -8,24 +8,18 @@ export declare class UsersController {
         email: string;
         role: import("@prisma/client").$Enums.Role;
         entryNumber: string | null;
+        department: string | null;
         id: string;
         isActive: boolean;
         createdAt: Date;
     }>;
-    getAllUsers(): Promise<{
-        name: string;
-        email: string;
-        role: import("@prisma/client").$Enums.Role;
-        entryNumber: string | null;
-        id: string;
-        isActive: boolean;
-        createdAt: Date;
-    }[]>;
+    getAllUsers(): Promise<any>;
     deactivate(id: string): Promise<{
         name: string;
         email: string;
         role: import("@prisma/client").$Enums.Role;
         entryNumber: string | null;
+        department: string | null;
         id: string;
         isActive: boolean;
         createdAt: Date;
@@ -35,8 +29,18 @@ export declare class UsersController {
         email: string;
         role: import("@prisma/client").$Enums.Role;
         entryNumber: string | null;
+        department: string | null;
         id: string;
         isActive: boolean;
         createdAt: Date;
+    }>;
+    updateDepartment(id: string, dto: {
+        department: string;
+    }): Promise<{
+        name: string;
+        email: string;
+        role: import("@prisma/client").$Enums.Role;
+        department: string | null;
+        id: string;
     }>;
 }

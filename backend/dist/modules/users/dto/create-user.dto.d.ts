@@ -3,4 +3,5 @@ export declare class CreateUserDto {
     email: string;
     role: "STUDENT" | "INSTRUCTOR" | "ADMIN";
     entryNumber?: string;
+    department?: string;
 }

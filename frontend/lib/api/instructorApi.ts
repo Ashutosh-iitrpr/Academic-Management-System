@@ -18,6 +18,10 @@ export interface CourseOffering {
   status: string;
   course: Course;
   allowedBranches: string[];
+  instructor?: {
+    name: string;
+    email: string;
+  };
   _count?: {
     enrollments: number;
   };
@@ -112,6 +116,12 @@ export const instructorApi = {
   // Get instructor's own course offerings
   getCourseOfferings: async (): Promise<CourseOffering[]> => {
     const response = await api.get('/instructor/course-offerings');
+    return response.data;
+  },
+
+  // Get all course offerings (regardless of instructor)
+  getAllCourseOfferings: async (): Promise<CourseOffering[]> => {
+    const response = await api.get('/instructor/all-course-offerings');
     return response.data;
   },
 

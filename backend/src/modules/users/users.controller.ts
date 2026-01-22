@@ -34,4 +34,12 @@ export class UsersController {
   activate(@Param("id") id: string) {
     return this.usersService.activateUser(id);
   }
+
+  @Patch(":id/department")
+  updateDepartment(
+    @Param("id") id: string,
+    @Body() dto: { department: string }
+  ) {
+    return this.usersService.updateUserDepartment(id, dto.department);
+  }
 }

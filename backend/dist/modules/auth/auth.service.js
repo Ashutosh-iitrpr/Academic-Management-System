@@ -25,6 +25,11 @@ let AuthService = class AuthService {
     async requestOtp(email) {
         const user = await this.prisma.user.findUnique({
             where: { email },
+            select: {
+                id: true,
+                email: true,
+                isActive: true,
+            },
         });
         if (!user) {
             throw new common_1.NotFoundException("User not found");
@@ -86,19 +91,13 @@ let AuthService = class AuthService {
                 name: user.name,
                 role: user.role,
                 entryNumber: user.entryNumber,
+                department: user.department,
             },
         };
     }
     async getCurrentUser(userId) {
         const user = await this.prisma.user.findUnique({
             where: { id: userId },
-            select: {
-                id: true,
-                email: true,
-                name: true,
-                role: true,
-                entryNumber: true,
-            },
         });
         if (!user) {
             throw new common_1.NotFoundException("User not found");
@@ -113,6 +112,7 @@ let AuthService = class AuthService {
             name: user.name,
             role: user.role,
             entryNumber: user.entryNumber,
+            department: user.department,
             branch: branch,
         };
     }

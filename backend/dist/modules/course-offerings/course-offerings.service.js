@@ -61,6 +61,40 @@ let CourseOfferingsService = class CourseOfferingsService {
             orderBy: { createdAt: "desc" },
         });
     }
+    async getAllOfferings() {
+        return this.prisma.courseOffering.findMany({
+            where: {
+                status: {
+                    in: [
+                        client_1.CourseOfferingStatus.ENROLLING,
+                        client_1.CourseOfferingStatus.COMPLETED,
+                    ],
+                },
+            },
+            include: {
+                course: {
+                    select: {
+                        code: true,
+                        name: true,
+                        credits: true,
+                    },
+                },
+                instructor: {
+                    select: {
+                        name: true,
+                        email: true,
+                    },
+                },
+                _count: {
+                    select: { enrollments: true },
+                },
+            },
+            orderBy: [
+                { semester: "desc" },
+                { createdAt: "desc" },
+            ],
+        });
+    }
     async requestOffering(instructorId, dto) {
         return this.prisma.courseOffering.create({
             data: {

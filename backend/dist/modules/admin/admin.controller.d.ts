@@ -80,6 +80,7 @@ export declare class AdminController {
         email: string;
         role: import("@prisma/client").$Enums.Role;
         entryNumber: string | null;
+        department: string | null;
         id: string;
         isActive: boolean;
         createdAt: Date;
@@ -89,6 +90,7 @@ export declare class AdminController {
         email: string;
         role: import("@prisma/client").$Enums.Role;
         entryNumber: string | null;
+        department: string | null;
         id: string;
         isActive: boolean;
         createdAt: Date;
@@ -98,6 +100,7 @@ export declare class AdminController {
         email: string;
         role: import("@prisma/client").$Enums.Role;
         entryNumber: string | null;
+        department: string | null;
         id: string;
         isActive: boolean;
         createdAt: Date;
@@ -134,8 +137,8 @@ export declare class AdminController {
             approvedAt: Date | null;
             completedAt: Date | null;
             courseOfferingId: string;
-            studentId: string;
             enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
+            studentId: string;
             grade: import("@prisma/client").$Enums.Grade | null;
             source: import("@prisma/client").$Enums.EnrollmentSource;
         })[];
@@ -144,6 +147,7 @@ export declare class AdminController {
         email: string;
         role: import("@prisma/client").$Enums.Role;
         entryNumber: string | null;
+        department: string | null;
         id: string;
         isActive: boolean;
         createdAt: Date;
@@ -174,8 +178,8 @@ export declare class AdminController {
         approvedAt: Date | null;
         completedAt: Date | null;
         courseOfferingId: string;
-        studentId: string;
         enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
+        studentId: string;
         grade: import("@prisma/client").$Enums.Grade | null;
         source: import("@prisma/client").$Enums.EnrollmentSource;
     })[]>;

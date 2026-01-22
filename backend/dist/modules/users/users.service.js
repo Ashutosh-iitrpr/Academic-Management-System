@@ -22,6 +22,9 @@ let UsersService = class UsersService {
         if (dto.role === "STUDENT" && !dto.entryNumber) {
             throw new common_1.BadRequestException("Entry number is required for students");
         }
+        if (dto.role === "INSTRUCTOR" && !dto.department) {
+            throw new common_1.BadRequestException("Department is required for instructors");
+        }
         if (dto.role !== "STUDENT" && dto.entryNumber) {
             throw new common_1.BadRequestException("Only students can have entry numbers");
         }
@@ -32,6 +35,7 @@ let UsersService = class UsersService {
                     email: dto.email,
                     role: dto.role,
                     entryNumber: dto.role === "STUDENT" ? dto.entryNumber : null,
+                    department: dto.department,
                 },
             });
         }
@@ -63,6 +67,28 @@ let UsersService = class UsersService {
             data: { isActive: true },
         });
     }
+    async updateUserDepartment(userId, department) {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+        });
+        if (!user) {
+            throw new common_1.NotFoundException(`User with ID ${userId} not found`);
+        }
+        if (user.role !== "INSTRUCTOR") {
+            throw new common_1.BadRequestException("Only instructors can have departments");
+        }
+        return this.prisma.user.update({
+            where: { id: userId },
+            data: { department },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+                department: true,
+            },
+        });
+    }
     async getAllUsers() {
         return this.prisma.user.findMany({
             select: {
@@ -71,6 +97,7 @@ let UsersService = class UsersService {
                 email: true,
                 role: true,
                 entryNumber: true,
+                department: true,
                 isActive: true,
                 createdAt: true,
             },

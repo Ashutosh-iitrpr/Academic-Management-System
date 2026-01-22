@@ -22,6 +22,11 @@ export class AuthService {
   async requestOtp(email: string) {
     const user = await this.prisma.user.findUnique({
       where: { email },
+      select: {
+        id: true,
+        email: true,
+        isActive: true,
+      },
     });
 
     if (!user) {
@@ -107,6 +112,7 @@ export class AuthService {
         name: user.name,
         role: user.role,
         entryNumber: user.entryNumber,
+        department: user.department,
       },
     };
   }
@@ -117,13 +123,6 @@ export class AuthService {
   async getCurrentUser(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        entryNumber: true,
-      },
     });
 
     if (!user) {
@@ -143,6 +142,7 @@ export class AuthService {
       name: user.name,
       role: user.role,
       entryNumber: user.entryNumber,
+      department: user.department,
       branch: branch,
     };
   }

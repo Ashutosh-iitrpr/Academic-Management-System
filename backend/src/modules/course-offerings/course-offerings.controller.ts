@@ -61,6 +61,12 @@ export class CourseOfferingsController {
     );
   }
 
+  @Get("instructor/all-course-offerings")
+  @Roles("INSTRUCTOR")
+  getAllCourseOfferings() {
+    return this.courseOfferingsService.getAllOfferings();
+  }
+
     // ---------------- ADMIN ----------------
 
     // View all pending offering requests

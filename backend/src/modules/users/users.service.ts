@@ -16,6 +16,13 @@ export class UsersService {
         );
       }
 
+      // 🔒 INSTRUCTOR must have department
+      if (dto.role === "INSTRUCTOR" && !dto.department) {
+        throw new BadRequestException(
+          "Department is required for instructors",
+        );
+      }
+
       // 🔒 Non-students must NOT have entryNumber
       if (dto.role !== "STUDENT" && dto.entryNumber) {
         throw new BadRequestException(
@@ -31,6 +38,7 @@ export class UsersService {
             role: dto.role,
             entryNumber:
               dto.role === "STUDENT" ? dto.entryNumber : null,
+            department: dto.department,
           },
         });
       } catch (error) {
@@ -71,6 +79,32 @@ export class UsersService {
     });
   }
 
+  async updateUserDepartment(userId: string, department: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+
+    if (user.role !== "INSTRUCTOR") {
+      throw new BadRequestException("Only instructors can have departments");
+    }
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { department },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        department: true,
+      },
+    });
+  }
+
   async getAllUsers() {
     return this.prisma.user.findMany({
       select: {
@@ -79,10 +113,11 @@ export class UsersService {
         email: true,
         role: true,
         entryNumber: true,
+        department: true,
         isActive: true,
         createdAt: true,
       },
       orderBy: { createdAt: "desc" },
-    });
+    }) as any;
   }
 }

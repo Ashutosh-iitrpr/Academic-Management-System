@@ -23,6 +23,7 @@ model User {
   createdAt DateTime @default(now())
 
   entryNumber String? @unique
+  department  String? // Required for instructors, optional for others
 
   enrollments Enrollment[]
   enrollmentTriggers EnrollmentTrigger[]

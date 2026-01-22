@@ -22,4 +22,8 @@ export class CreateUserDto {
       "Entry number must be like 2023CSB1289",
   })
   entryNumber?: string;
+
+  @IsOptional()
+  @IsString()
+  department?: string; // Required for INSTRUCTOR role
 }

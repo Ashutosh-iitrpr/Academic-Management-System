@@ -54,6 +54,11 @@ export default function ProfilePage() {
                         Branch: {user.branch}
                       </Typography>
                     )}
+                    {user?.department && (
+                      <Typography variant="caption" sx={{ backgroundColor: '#f5f5f5', px: 1.5, py: 0.5, borderRadius: 1 }}>
+                        Department: {user.department}
+                      </Typography>
+                    )}
                   </Box>
                 </Box>
               </Box>
@@ -112,6 +117,17 @@ export default function ProfilePage() {
                       fullWidth
                       label="Branch"
                       defaultValue={user.branch}
+                      disabled
+                      variant="outlined"
+                    />
+                  </Grid>
+                )}
+                {user?.department && (
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      fullWidth
+                      label="Department"
+                      defaultValue={user.department}
                       disabled
                       variant="outlined"
                     />
