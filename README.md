@@ -1,97 +1,274 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Academic Management System
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
-
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+A comprehensive web-based platform for managing academic processes including course offerings, student enrollments, grade management, and academic records.
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+A full-stack application built with **NestJS** (backend) and **Next.js** (frontend) to streamline academic operations for administrators, instructors, and students.
 
-## Project setup
+## Tech Stack
 
-```bash
-$ npm install
+### Backend
+- **NestJS** - Progressive Node.js framework
+- **Prisma** - Next-generation ORM
+- **PostgreSQL** - Relational database
+- **JWT** - Authentication
+- **Nodemailer** - Email notifications
+
+### Frontend
+- **Next.js 14** - React framework with App Router
+- **TypeScript** - Type-safe development
+- **Material-UI (MUI)** - Component library
+- **Axios** - HTTP client
+
+## Features
+
+### For Administrators
+- **Course Management**: Create, edit, and manage courses
+- **Course Offering Approvals**: Review and approve instructor course offering requests
+- **Academic Calendar**: Set enrollment periods, drop/audit deadlines
+- **User Management**: Manage student and instructor accounts
+- **Transcript Generation**: View and generate student transcripts
+
+### For Instructors
+- **Course Offerings**: Request to teach courses for specific semesters
+- **Enrollment Management**: 
+  - Approve/reject student enrollment requests
+  - Batch enroll students by branch and year
+  - View all enrollments by status (Enrolled, Audit, Dropped)
+- **Grade Management**: Upload and update grades for enrolled students
+- **Feedback Forms**: Create and manage course feedback forms
+
+### For Students
+- **Course Browsing**: View available course offerings with filters
+- **Enrollment Requests**: Request enrollment in courses
+- **Enrollment Management**: Drop or audit courses within deadlines
+- **Academic Record**: View semester-wise performance and GPA
+- **Course Feedback**: Provide feedback for completed courses
+
+## System Architecture
+
+```
+academic-management-system/
+├── backend/                 # NestJS backend
+│   ├── prisma/             # Database schema and migrations
+│   ├── src/
+│   │   ├── modules/        # Feature modules
+│   │   ├── common/         # Shared utilities
+│   │   ├── constants/      # Constants
+│   │   └── utils/          # Helper functions
+│   └── dist/               # Compiled output
+├── frontend/               # Next.js frontend
+│   ├── app/                # App router pages
+│   │   ├── admin/         # Admin pages
+│   │   ├── instructor/    # Instructor pages
+│   │   └── student/       # Student pages
+│   ├── components/        # Reusable components
+│   ├── lib/               # API clients, utilities
+│   └── public/            # Static assets
+└── README.md
 ```
 
-## Compile and run the project
+## Project Setup
+
+### Prerequisites
+- Node.js (v18 or higher)
+- PostgreSQL (v14 or higher)
+- npm or yarn
+
+### Backend Setup
 
 ```bash
-# development
-$ npm run start
+cd backend
+npm install
 
-# watch mode
-$ npm run start:dev
+# Set up environment variables
+cp .env.example .env
+# Edit .env with your database credentials
 
-# production mode
-$ npm run start:prod
+# Run database migrations
+npx prisma migrate dev
+
+# Generate Prisma client
+npx prisma generate
+
+# Start development server
+npm run start:dev
 ```
 
-## Run tests
+### Frontend Setup
 
 ```bash
-# unit tests
-$ npm run test
+cd frontend
+npm install
 
-# e2e tests
-$ npm run test:e2e
+# Set up environment variables
+cp .env.local.example .env.local
+# Edit .env.local with backend API URL
 
-# test coverage
-$ npm run test:cov
+# Start development server
+npm run dev
 ```
 
-## Deployment
+## Environment Variables
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+### Backend (.env)
+```env
+DATABASE_URL="postgresql://user:password@localhost:5432/academic_management"
+JWT_SECRET="your-secret-key"
+MAIL_HOST="smtp.example.com"
+MAIL_PORT=587
+MAIL_USER="your-email@example.com"
+MAIL_PASSWORD="your-password"
+```
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### Frontend (.env.local)
+```env
+NEXT_PUBLIC_API_URL="http://localhost:3000"
+```
 
+## Running the Application
+
+### Development Mode
+
+**Backend:**
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+cd backend
+npm run start:dev
+# Runs on http://localhost:3000
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+**Frontend:**
+```bash
+cd frontend
+npm run dev
+# Runs on http://localhost:3001
+```
 
-## Resources
+### Production Build
 
-Check out a few resources that may come in handy when working with NestJS:
+**Backend:**
+```bash
+cd backend
+npm run build
+npm run start:prod
+```
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+**Frontend:**
+```bash
+cd frontend
+npm run build
+npm start
+```
 
-## Support
+## Database Schema
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+Key models:
+- **User**: Students, Instructors, and Admins
+- **Course**: Course catalog with code, name, and credits
+- **CourseOffering**: Specific course instances per semester
+- **Enrollment**: Student course enrollments with grades
+- **EnrollmentTrigger**: Batch enrollment automation
+- **AcademicCalendar**: Semester dates and deadlines
+- **FeedbackForm**: Course feedback collection
+- **CourseFeedback**: Student feedback responses
 
-## Stay in touch
+### Enrollment Statuses
+- `PENDING_INSTRUCTOR` - Awaiting instructor approval
+- `ENROLLED` - Active enrollment for credit
+- `AUDIT` - Auditing the course
+- `DROPPED` - Student dropped the course
+- `REJECTED` - Enrollment rejected by instructor
+- `COMPLETED` - Course completed with grade
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+### Grade Scale
+- **A** (10 points) - Excellent
+- **A-** (9 points)
+- **B** (8 points)
+- **B-** (7 points)
+- **C** (6 points)
+- **C-** (5 points)
+- **D** (4 points)
+- **E** (2 points)
+- **F** (0 points)
+
+## API Endpoints
+
+### Authentication
+- `POST /auth/request-login` - Request OTP for login
+- `POST /auth/verify-otp` - Verify OTP and get JWT token
+
+### Admin
+- `GET /admin/course-offerings` - Get pending course offerings
+- `PATCH /admin/course-offerings/:id/approve` - Approve offering
+- `PATCH /admin/course-offerings/:id/reject` - Reject offering
+- `GET /courses` - Get all courses
+- `POST /courses` - Create new course
+
+### Instructor
+- `POST /instructor/course-offerings` - Request course offering
+- `GET /instructor/enrollments/pending` - Get pending enrollments
+- `PATCH /instructor/enrollments/:id/approve` - Approve enrollment
+- `PATCH /instructor/enrollments/:id/reject` - Reject enrollment
+- `POST /instructor/course-offerings/:id/grades` - Upload grades
+- `POST /instructor/enrollments/trigger` - Batch enroll students
+
+### Student
+- `GET /student/course-offerings` - Browse available offerings
+- `POST /student/enrollments` - Request enrollment
+- `DELETE /student/enrollments/:id/drop` - Drop enrollment
+- `PATCH /student/enrollments/:id/audit` - Convert to audit
+- `GET /student/enrollments` - Get my enrollments
+- `GET /student/record` - Get academic record
+
+## Key Features Implementation
+
+### Academic Calendar Integration
+The system enforces enrollment periods and deadlines:
+- Enrollment requests only allowed during enrollment period
+- Drop deadline enforcement
+- Audit conversion deadline enforcement
+
+### Batch Enrollment
+Instructors can enroll entire batches by:
+- Branch code (e.g., CSB, ECE)
+- Batch year (e.g., 2023)
+- Enrollment type (Credit, Credit Concentration, Credit Minor)
+
+### Grade Management
+- Instructors can upload/update grades for enrolled and audit students
+- Grades automatically mark enrollment as `COMPLETED`
+- GPA calculation based on weighted credit hours
+
+## Common Issues & Solutions
+
+### Prisma Schema Changes
+After merging changes to `schema.prisma`:
+```bash
+cd backend
+npx prisma generate
+npx prisma migrate dev
+npm run build
+npm run start:dev
+```
+
+### Port Conflicts
+If ports 3000 or 3001 are in use:
+- Backend: Change port in `backend/src/main.ts`
+- Frontend: Change port with `npm run dev -- -p 3002`
+
+### Database Connection Issues
+- Verify PostgreSQL is running
+- Check DATABASE_URL in `.env`
+- Ensure database exists: `createdb academic_management`
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## License
 
