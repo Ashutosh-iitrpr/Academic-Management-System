@@ -3,6 +3,7 @@ import { PrismaService } from "../../prisma/prisma.service";
 import { RequestOfferingDto } from "./dto/request-offering.dto";
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   NotFoundException,
 } from "@nestjs/common";
@@ -91,15 +92,79 @@ export class CourseOfferingsService {
     });
   }
 
+  async getInstructorSemesters() {
+    const calendars = await this.prisma.academicCalendar.findMany({
+      select: { semesterName: true },
+      orderBy: { createdAt: "desc" },
+    });
+    // Return unique semester names in order
+    const seen = new Set<string>();
+    const semesters: string[] = [];
+    for (const c of calendars) {
+      if (!seen.has(c.semesterName)) {
+        seen.add(c.semesterName);
+        semesters.push(c.semesterName);
+      }
+    }
+    return semesters;
+  }
+
   // ✅ THIS METHOD MUST EXIST
   async requestOffering(
     instructorId: string,
     dto: RequestOfferingDto,
   ) {
+    // Defensive validation in case global ValidationPipe is not enabled
+    if (!dto.courseCode?.trim() && !dto.courseId?.trim()) {
+      throw new BadRequestException("courseCode is required");
+    }
+    if (!dto.semester?.trim()) {
+      throw new BadRequestException("semester is required");
+    }
+    if (!dto.timeSlot?.trim()) {
+      throw new BadRequestException("timeSlot is required");
+    }
+    if (!dto.allowedBranches || dto.allowedBranches.length === 0) {
+      throw new BadRequestException("allowedBranches must have at least one branch");
+    }
+
+    // Ensure branches follow expected format (three uppercase letters)
+    dto.allowedBranches.forEach((b) => {
+      if (!/^[A-Z]{3}$/.test(b)) {
+        throw new BadRequestException("Each branch code must be three uppercase letters (e.g., CSB)");
+      }
+    });
+
+    // Verify instructor exists and is active
+    const instructor = await this.prisma.user.findUnique({
+      where: { id: instructorId },
+      select: { id: true, role: true, isActive: true },
+    });
+    if (!instructor || instructor.role !== "INSTRUCTOR" || !instructor.isActive) {
+      throw new ForbiddenException("Only active instructors can request offerings");
+    }
+
+    // Verify course exists via code (preferred) or id
+    let course: { id: string; code: string; name: string; credits: number } | null = null;
+    const courseCode = dto.courseCode?.trim();
+    const courseId = dto.courseId?.trim();
+    
+    if (courseCode) {
+      course = await this.prisma.course.findFirst({
+        where: { code: { equals: courseCode, mode: "insensitive" } },
+      });
+    }
+    if (!course && courseId) {
+      course = await this.prisma.course.findUnique({ where: { id: courseId } });
+    }
+    if (!course) {
+      throw new NotFoundException("Course not found. Please create a new course proposal first.");
+    }
+
     return this.prisma.courseOffering.create({
       data: {
         instructorId,
-        courseId: dto.courseId,
+        courseId: course.id,
         semester: dto.semester,
         timeSlot: dto.timeSlot,
         allowedBranches: dto.allowedBranches,
@@ -142,11 +207,11 @@ export class CourseOfferingsService {
 
     // Approve this one
     return this.prisma.courseOffering.update({
-        where: { id: offeringId },
-        data: {
+      where: { id: offeringId },
+      data: {
         status: "ENROLLING",
         approvedAt: new Date(),
-        },
+      },
     });
     }
 

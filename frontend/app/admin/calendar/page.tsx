@@ -33,6 +33,9 @@ import EditIcon from '@mui/icons-material/Edit';
 
 interface AcademicCalendar {
   id?: string;
+  semesterName?: string;
+  semesterStartDate?: string;
+  semesterEndDate?: string;
   enrollmentStart: string;
   enrollmentEnd: string;
   dropDeadline: string;
@@ -79,6 +82,9 @@ const CalendarPage = () => {
     setEditMode(edit);
     if (!edit) {
       setFormData({
+        semesterName: '',
+        semesterStartDate: '',
+        semesterEndDate: '',
         enrollmentStart: '',
         enrollmentEnd: '',
         dropDeadline: '',
@@ -103,6 +109,9 @@ const CalendarPage = () => {
 
   const handleSubmit = async () => {
     if (
+      !formData.semesterName ||
+      !formData.semesterStartDate ||
+      !formData.semesterEndDate ||
       !formData.enrollmentStart ||
       !formData.enrollmentEnd ||
       !formData.dropDeadline ||
@@ -114,19 +123,32 @@ const CalendarPage = () => {
 
     try {
       setSubmitting(true);
+      
+      // Convert datetime-local format to ISO 8601
+      const payload = {
+        semesterName: formData.semesterName,
+        semesterStartDate: new Date(formData.semesterStartDate).toISOString(),
+        semesterEndDate: new Date(formData.semesterEndDate).toISOString(),
+        enrollmentStart: new Date(formData.enrollmentStart).toISOString(),
+        enrollmentEnd: new Date(formData.enrollmentEnd).toISOString(),
+        dropDeadline: new Date(formData.dropDeadline).toISOString(),
+        auditDeadline: new Date(formData.auditDeadline).toISOString(),
+      };
+
       if (editMode && calendar) {
-        await axiosClient.patch('/admin/academic-calendar', formData);
+        await axiosClient.patch('/admin/academic-calendar', payload);
         setMessage('Calendar updated successfully!');
       } else {
-        await axiosClient.post('/admin/academic-calendar', formData);
+        await axiosClient.post('/admin/academic-calendar', payload);
         setMessage('Calendar created successfully!');
       }
       fetchCalendar();
       setTimeout(() => {
         handleCloseDialog();
       }, 1500);
-    } catch (error) {
-      setMessage('Error saving calendar. Please try again.');
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || 'Error saving calendar. Please try again.';
+      setMessage(errorMsg);
       console.error('Error:', error);
     } finally {
       setSubmitting(false);
@@ -185,7 +207,69 @@ const CalendarPage = () => {
             </Alert>
           ) : (
             <Grid container spacing={3}>
+              {/* Semester Header Card */}
+              <Grid item xs={12}>
+                <Card sx={{ backgroundColor: '#f5f5f5', borderLeft: '4px solid #8B3A3A' }}>
+                  <CardContent>
+                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#8B3A3A' }}>
+                      {calendar.semesterName}
+                    </Typography>
+                    <Typography sx={{ color: '#666', mt: 1 }}>
+                      {new Date(calendar.semesterStartDate).toLocaleDateString()} to {new Date(calendar.semesterEndDate).toLocaleDateString()}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+
               {/* Timeline Cards */}
+              <Grid item xs={12} sm={6} md={3}>
+                <Card>
+                  <CardContent>
+                    <Typography color="textSecondary" gutterBottom sx={{ fontSize: '0.85rem' }}>
+                      SEMESTER START
+                    </Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+                      {new Date(calendar.semesterStartDate).toLocaleDateString()}
+                    </Typography>
+                    <Typography
+                      sx={{
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        color: getDaysRemainingColor(getDaysRemaining(calendar.semesterStartDate)),
+                      }}
+                    >
+                      {getDaysRemaining(calendar.semesterStartDate) > 0
+                        ? `In ${getDaysRemaining(calendar.semesterStartDate)} days`
+                        : `${Math.abs(getDaysRemaining(calendar.semesterStartDate))} days ago`}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={3}>
+                <Card>
+                  <CardContent>
+                    <Typography color="textSecondary" gutterBottom sx={{ fontSize: '0.85rem' }}>
+                      SEMESTER END
+                    </Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+                      {new Date(calendar.semesterEndDate).toLocaleDateString()}
+                    </Typography>
+                    <Typography
+                      sx={{
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        color: getDaysRemainingColor(getDaysRemaining(calendar.semesterEndDate)),
+                      }}
+                    >
+                      {getDaysRemaining(calendar.semesterEndDate) > 0
+                        ? `In ${getDaysRemaining(calendar.semesterEndDate)} days`
+                        : `${Math.abs(getDaysRemaining(calendar.semesterEndDate))} days ago`}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+
               <Grid item xs={12} sm={6} md={3}>
                 <Card>
                   <CardContent>
@@ -293,35 +377,39 @@ const CalendarPage = () => {
                       sx={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: 2,
+                        gap: 1,
                         overflowX: 'auto',
                         pb: 2,
                       }}
                     >
                       {[
+                        { label: 'Semester Start', date: calendar.semesterStartDate },
                         { label: 'Enrollment Start', date: calendar.enrollmentStart },
                         { label: 'Enrollment End', date: calendar.enrollmentEnd },
                         { label: 'Drop Deadline', date: calendar.dropDeadline },
                         { label: 'Audit Deadline', date: calendar.auditDeadline },
-                      ].map((item, index) => (
-                        <Box key={index} sx={{ minWidth: 'max-content' }}>
+                        { label: 'Semester End', date: calendar.semesterEndDate },
+                      ].map((item, index, arr) => (
+                        <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 'max-content' }}>
                           <Box
                             sx={{
                               p: 2,
                               border: '1px solid #ddd',
                               borderRadius: '8px',
                               textAlign: 'center',
+                              minWidth: '120px',
+                              backgroundColor: '#fff',
                             }}
                           >
                             <Typography sx={{ fontSize: '0.8rem', color: '#666', fontWeight: 600 }}>
                               {item.label}
                             </Typography>
-                            <Typography sx={{ fontWeight: 700, mt: 1 }}>
+                            <Typography sx={{ fontWeight: 700, mt: 1, fontSize: '0.9rem' }}>
                               {new Date(item.date).toLocaleDateString()}
                             </Typography>
                           </Box>
-                          {index < 3 && (
-                            <Box sx={{ textAlign: 'center', color: '#999', mt: 1 }}>→</Box>
+                          {index < arr.length - 1 && (
+                            <Typography sx={{ color: '#999', fontSize: '1.5rem', fontWeight: 700 }}>→</Typography>
                           )}
                         </Box>
                       ))}
@@ -394,11 +482,38 @@ const CalendarPage = () => {
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <TextField
                 fullWidth
+                label="Semester Name"
+                placeholder="e.g., Spring 2026"
+                value={formData.semesterName || ''}
+                onChange={(e) => handleInputChange('semesterName', e.target.value)}
+                disabled={submitting}
+              />
+              <TextField
+                fullWidth
+                label="Semester Start Date"
+                type="datetime-local"
+                value={formData.semesterStartDate || ''}
+                onChange={(e) => handleInputChange('semesterStartDate', e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                disabled={submitting}
+              />
+              <TextField
+                fullWidth
+                label="Semester End Date"
+                type="datetime-local"
+                value={formData.semesterEndDate || ''}
+                onChange={(e) => handleInputChange('semesterEndDate', e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                disabled={submitting}
+              />
+              <TextField
+                fullWidth
                 label="Enrollment Start Date"
                 type="datetime-local"
                 value={formData.enrollmentStart}
                 onChange={(e) => handleInputChange('enrollmentStart', e.target.value)}
                 InputLabelProps={{ shrink: true }}
+                disabled={submitting}
               />
               <TextField
                 fullWidth
@@ -407,6 +522,7 @@ const CalendarPage = () => {
                 value={formData.enrollmentEnd}
                 onChange={(e) => handleInputChange('enrollmentEnd', e.target.value)}
                 InputLabelProps={{ shrink: true }}
+                disabled={submitting}
               />
               <TextField
                 fullWidth
@@ -415,6 +531,7 @@ const CalendarPage = () => {
                 value={formData.dropDeadline}
                 onChange={(e) => handleInputChange('dropDeadline', e.target.value)}
                 InputLabelProps={{ shrink: true }}
+                disabled={submitting}
               />
               <TextField
                 fullWidth
@@ -423,6 +540,7 @@ const CalendarPage = () => {
                 value={formData.auditDeadline}
                 onChange={(e) => handleInputChange('auditDeadline', e.target.value)}
                 InputLabelProps={{ shrink: true }}
+                disabled={submitting}
               />
             </Box>
           </DialogContent>

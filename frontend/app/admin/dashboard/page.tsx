@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Grid, Box, Card, CardContent, Typography, Button, Alert } from '@mui/material';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import ProtectedRoute from '@/lib/routes/ProtectedRoute';
@@ -61,43 +61,74 @@ const AdminDashboard = () => {
   const [calendar, setCalendar] = useState<AcademicCalendar | null>(null);
   const [pendingOfferings, setPendingOfferings] = useState<CourseOffering[]>([]);
   const [daysUntilEnrollmentEnd, setDaysUntilEnrollmentEnd] = useState<number | null>(null);
+  const [actionOfferingId, setActionOfferingId] = useState<string | null>(null);
+
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const [statsRes, calendarRes, pendingRes] = await Promise.all([
+        axiosClient.get('/admin/dashboard/stats'),
+        axiosClient.get('/admin/academic-calendar'),
+        axiosClient.get('/admin/course-offerings'),
+      ]);
+
+      setStats({
+        totalUsers: statsRes.data?.totalUsers ?? 0,
+        totalCourses: statsRes.data?.totalCourses ?? 0,
+        pendingApprovals: statsRes.data?.pendingApprovals ?? 0,
+        activeSemesters: statsRes.data?.activeSemesters ?? 0,
+      });
+
+      if (calendarRes.data) {
+        setCalendar(calendarRes.data);
+        setDaysUntilEnrollmentEnd(getDaysUntilDeadline(calendarRes.data.enrollmentEnd));
+      } else {
+        setCalendar(null);
+        setDaysUntilEnrollmentEnd(null);
+      }
+
+      setPendingOfferings(pendingRes.data || []);
+    } catch (error) {
+      console.error('Failed to fetch admin dashboard data:', error);
+      setError('Unable to load dashboard data. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }, [axiosClient]);
+
+  const handleApproveOffering = async (offeringId: string) => {
+    try {
+      setActionOfferingId(offeringId);
+      await axiosClient.patch(`/admin/course-offerings/${offeringId}/approve`);
+      await fetchData();
+    } catch (err) {
+      console.error('Error approving offering:', err);
+      setError('Failed to approve offering. Please try again.');
+    } finally {
+      setActionOfferingId(null);
+    }
+  };
+
+  const handleRejectOffering = async (offeringId: string) => {
+    const reason = window.prompt('Enter a reason for rejection (optional):', '');
+    if (reason === null) return;
+
+    try {
+      setActionOfferingId(offeringId);
+      await axiosClient.patch(`/admin/course-offerings/${offeringId}/reject`, { reason: reason || 'Rejected from dashboard' });
+      await fetchData();
+    } catch (err) {
+      console.error('Error rejecting offering:', err);
+      setError('Failed to reject offering. Please try again.');
+    } finally {
+      setActionOfferingId(null);
+    }
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const [statsRes, calendarRes, pendingRes] = await Promise.all([
-          axiosClient.get('/admin/dashboard/stats'),
-          axiosClient.get('/admin/academic-calendar'),
-          axiosClient.get('/admin/course-offerings'),
-        ]);
-
-        setStats({
-          totalUsers: statsRes.data?.totalUsers ?? 0,
-          totalCourses: statsRes.data?.totalCourses ?? 0,
-          pendingApprovals: statsRes.data?.pendingApprovals ?? 0,
-          activeSemesters: statsRes.data?.activeSemesters ?? 0,
-        });
-
-        if (calendarRes.data) {
-          setCalendar(calendarRes.data);
-          setDaysUntilEnrollmentEnd(getDaysUntilDeadline(calendarRes.data.enrollmentEnd));
-        } else {
-          setCalendar(null);
-          setDaysUntilEnrollmentEnd(null);
-        }
-
-        setPendingOfferings(pendingRes.data || []);
-      } catch (error) {
-        console.error('Failed to fetch admin dashboard data:', error);
-        setError('Unable to load dashboard data. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   return (
     <ProtectedRoute requiredRole="ADMIN">
@@ -357,6 +388,8 @@ const AdminDashboard = () => {
                               backgroundColor: '#4caf50',
                               '&:hover': { backgroundColor: '#388e3c' },
                             }}
+                            onClick={() => handleApproveOffering(offering.id)}
+                            disabled={actionOfferingId === offering.id}
                           >
                             Approve
                           </Button>
@@ -367,6 +400,8 @@ const AdminDashboard = () => {
                               borderColor: '#f44336',
                               color: '#f44336',
                             }}
+                            onClick={() => handleRejectOffering(offering.id)}
+                            disabled={actionOfferingId === offering.id}
                           >
                             Reject
                           </Button>

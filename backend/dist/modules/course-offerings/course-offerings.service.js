@@ -95,11 +95,64 @@ let CourseOfferingsService = class CourseOfferingsService {
             ],
         });
     }
+    async getInstructorSemesters() {
+        const calendars = await this.prisma.academicCalendar.findMany({
+            select: { semesterName: true },
+            orderBy: { createdAt: "desc" },
+        });
+        const seen = new Set();
+        const semesters = [];
+        for (const c of calendars) {
+            if (!seen.has(c.semesterName)) {
+                seen.add(c.semesterName);
+                semesters.push(c.semesterName);
+            }
+        }
+        return semesters;
+    }
     async requestOffering(instructorId, dto) {
+        if (!dto.courseCode?.trim() && !dto.courseId?.trim()) {
+            throw new common_2.BadRequestException("courseCode is required");
+        }
+        if (!dto.semester?.trim()) {
+            throw new common_2.BadRequestException("semester is required");
+        }
+        if (!dto.timeSlot?.trim()) {
+            throw new common_2.BadRequestException("timeSlot is required");
+        }
+        if (!dto.allowedBranches || dto.allowedBranches.length === 0) {
+            throw new common_2.BadRequestException("allowedBranches must have at least one branch");
+        }
+        dto.allowedBranches.forEach((b) => {
+            if (!/^[A-Z]{3}$/.test(b)) {
+                throw new common_2.BadRequestException("Each branch code must be three uppercase letters (e.g., CSB)");
+            }
+        });
+        const instructor = await this.prisma.user.findUnique({
+            where: { id: instructorId },
+            select: { id: true, role: true, isActive: true },
+        });
+        if (!instructor || instructor.role !== "INSTRUCTOR" || !instructor.isActive) {
+            throw new common_2.ForbiddenException("Only active instructors can request offerings");
+        }
+        let course = null;
+        const courseCode = dto.courseCode?.trim();
+        const courseId = dto.courseId?.trim();
+        if (courseCode) {
+            course = await this.prisma.course.findFirst({
+                where: { code: { equals: courseCode, mode: "insensitive" } },
+            });
+        }
+        if (!course && courseId) {
+            course = await this.prisma.course.findUnique({ where: { id: courseId } });
+        }
+        if (!course) {
+            throw new common_2.NotFoundException("Course not found. Please create a new course proposal first.");
+        }
         return this.prisma.courseOffering.create({
             data: {
                 instructorId,
-                courseId: dto.courseId,
+                courseId: course.id,
                 semester: dto.semester,
                 timeSlot: dto.timeSlot,
                 allowedBranches: dto.allowedBranches,

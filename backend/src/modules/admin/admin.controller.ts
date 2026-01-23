@@ -9,7 +9,10 @@ import {
   NotFoundException,
   BadRequestException,
   ConflictException,
+  UseInterceptors,
+  UploadedFile,
 } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
 import { PrismaService } from "../../prisma/prisma.service";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
@@ -33,15 +36,49 @@ export class AdminController {
     dropDeadline: string;
     auditDeadline: string;
   }) {
+    // Validate required fields
+    if (!dto.semesterName || !dto.semesterName.trim()) {
+      throw new BadRequestException("Semester name is required");
+    }
+
+    // Parse and validate dates
+    const parseDate = (dateString: string, fieldName: string): Date => {
+      if (!dateString) {
+        throw new BadRequestException(`${fieldName} is required`);
+      }
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        throw new BadRequestException(
+          `Invalid ${fieldName} format. Please use ISO 8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)`
+        );
+      }
+      return date;
+    };
+
+    const semesterStartDate = parseDate(dto.semesterStartDate, "Semester start date");
+    const semesterEndDate = parseDate(dto.semesterEndDate, "Semester end date");
+    const enrollmentStart = parseDate(dto.enrollmentStart, "Enrollment start date");
+    const enrollmentEnd = parseDate(dto.enrollmentEnd, "Enrollment end date");
+    const dropDeadline = parseDate(dto.dropDeadline, "Drop deadline");
+    const auditDeadline = parseDate(dto.auditDeadline, "Audit deadline");
+
+    // Validate date order
+    if (semesterStartDate >= semesterEndDate) {
+      throw new BadRequestException("Semester start date must be before semester end date");
+    }
+    if (enrollmentStart >= enrollmentEnd) {
+      throw new BadRequestException("Enrollment start date must be before enrollment end date");
+    }
+
     return this.prisma.academicCalendar.create({
       data: {
-        semesterName: dto.semesterName,
-        semesterStartDate: new Date(dto.semesterStartDate),
-        semesterEndDate: new Date(dto.semesterEndDate),
-        enrollmentStart: new Date(dto.enrollmentStart),
-        enrollmentEnd: new Date(dto.enrollmentEnd),
-        dropDeadline: new Date(dto.dropDeadline),
-        auditDeadline: new Date(dto.auditDeadline),
+        semesterName: dto.semesterName.trim(),
+        semesterStartDate,
+        semesterEndDate,
+        enrollmentStart,
+        enrollmentEnd,
+        dropDeadline,
+        auditDeadline,
       },
     });
   }
@@ -58,13 +95,31 @@ export class AdminController {
     auditDeadline?: string;
   }) {
     const data: any = {};
-    if (dto.semesterName) data.semesterName = dto.semesterName;
-    if (dto.semesterStartDate) data.semesterStartDate = new Date(dto.semesterStartDate);
-    if (dto.semesterEndDate) data.semesterEndDate = new Date(dto.semesterEndDate);
-    if (dto.enrollmentStart) data.enrollmentStart = new Date(dto.enrollmentStart);
-    if (dto.enrollmentEnd) data.enrollmentEnd = new Date(dto.enrollmentEnd);
-    if (dto.dropDeadline) data.dropDeadline = new Date(dto.dropDeadline);
-    if (dto.auditDeadline) data.auditDeadline = new Date(dto.auditDeadline);
+
+    if (dto.semesterName && dto.semesterName.trim()) {
+      data.semesterName = dto.semesterName.trim();
+    }
+
+    // Helper function to parse and validate dates
+    const parseDate = (dateString: string, fieldName: string): Date => {
+      if (!dateString) {
+        throw new BadRequestException(`${fieldName} is required`);
+      }
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        throw new BadRequestException(
+          `Invalid ${fieldName} format. Please use ISO 8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)`
+        );
+      }
+      return date;
+    };
+
+    if (dto.semesterStartDate) data.semesterStartDate = parseDate(dto.semesterStartDate, "Semester start date");
+    if (dto.semesterEndDate) data.semesterEndDate = parseDate(dto.semesterEndDate, "Semester end date");
+    if (dto.enrollmentStart) data.enrollmentStart = parseDate(dto.enrollmentStart, "Enrollment start date");
+    if (dto.enrollmentEnd) data.enrollmentEnd = parseDate(dto.enrollmentEnd, "Enrollment end date");
+    if (dto.dropDeadline) data.dropDeadline = parseDate(dto.dropDeadline, "Drop deadline");
+    if (dto.auditDeadline) data.auditDeadline = parseDate(dto.auditDeadline, "Audit deadline");
 
     return this.prisma.academicCalendar.updateMany({
       data,
@@ -146,6 +201,7 @@ export class AdminController {
     email: string;
     role: "STUDENT" | "INSTRUCTOR" | "ADMIN";
     entryNumber?: string;
+    department?: string;
   }) {
     // Validate student must have entryNumber
     if (dto.role === "STUDENT" && !dto.entryNumber) {
@@ -164,11 +220,127 @@ export class AdminController {
           email: dto.email,
           role: dto.role,
           entryNumber: dto.role === "STUDENT" ? dto.entryNumber : null,
+          department: dto.role === "INSTRUCTOR" ? dto.department : null,
         },
       });
     } catch (error) {
       throw new NotFoundException(
         "User with this email or entry number already exists"
+      );
+    }
+  }
+
+  // 📤 Bulk Upload Users from CSV
+  @Post("users/bulk-upload")
+  @UseInterceptors(FileInterceptor("file"))
+  async bulkUploadUsers(@UploadedFile() file: any) {
+    if (!file) {
+      throw new BadRequestException("No file uploaded");
+    }
+
+    if (!file.originalname.endsWith(".csv")) {
+      throw new BadRequestException("Only CSV files are accepted");
+    }
+
+    try {
+      const csvContent = file.buffer.toString("utf-8");
+      const lines = csvContent.split("\n").filter((line) => line.trim());
+
+      if (lines.length < 2) {
+        throw new BadRequestException("CSV must contain headers and at least one data row");
+      }
+
+      // Parse header
+      const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
+      const nameIndex = headers.indexOf("name");
+      const emailIndex = headers.indexOf("email");
+      const roleIndex = headers.indexOf("role");
+      const entryNumberIndex = headers.indexOf("entrynumber");
+      const departmentIndex = headers.indexOf("department");
+
+      if (nameIndex === -1 || emailIndex === -1 || roleIndex === -1) {
+        throw new BadRequestException(
+          "CSV must contain columns: name, email, role"
+        );
+      }
+
+      const results: any[] = [];
+      let createdCount = 0;
+      let failedCount = 0;
+      const errors: string[] = [];
+
+      // Process data rows
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(",").map((v) => v.trim());
+
+        if (values.length < 3) continue;
+
+        const name = values[nameIndex];
+        const email = values[emailIndex];
+        const role = values[roleIndex]?.toUpperCase();
+        const entryNumber = entryNumberIndex >= 0 ? values[entryNumberIndex] : null;
+        const department = departmentIndex >= 0 ? values[departmentIndex] : null;
+
+        // Validate required fields
+        if (!name || !email || !role) {
+          errors.push(`Row ${i + 1}: Missing required fields`);
+          failedCount++;
+          continue;
+        }
+
+        // Validate role
+        if (!["STUDENT", "INSTRUCTOR", "ADMIN"].includes(role)) {
+          errors.push(`Row ${i + 1}: Invalid role '${role}'`);
+          failedCount++;
+          continue;
+        }
+
+        // Validate student must have entryNumber
+        if (role === "STUDENT" && !entryNumber) {
+          errors.push(`Row ${i + 1}: Entry number required for students`);
+          failedCount++;
+          continue;
+        }
+
+        // Validate instructor must have department
+        if (role === "INSTRUCTOR" && !department) {
+          errors.push(`Row ${i + 1}: Department required for instructors`);
+          failedCount++;
+          continue;
+        }
+
+        try {
+          await this.prisma.user.create({
+            data: {
+              name,
+              email,
+              role: role as "STUDENT" | "INSTRUCTOR" | "ADMIN",
+              entryNumber: role === "STUDENT" ? entryNumber : null,
+              department: role === "INSTRUCTOR" ? department : null,
+            },
+          });
+          createdCount++;
+        } catch (error: any) {
+          errors.push(
+            `Row ${i + 1}: ${
+              error.message.includes("Unique constraint") 
+                ? "Email or entry number already exists" 
+                : error.message
+            }`
+          );
+          failedCount++;
+        }
+      }
+
+      return {
+        createdCount,
+        failedCount,
+        totalProcessed: createdCount + failedCount,
+        errors: errors.slice(0, 10), // Return first 10 errors
+      };
+    } catch (error: any) {
+      throw new BadRequestException(
+        error.message || "Error processing CSV file"
       );
     }
   }
@@ -370,6 +542,7 @@ export class AdminController {
         ...(dto.name && { name: dto.name }),
         ...(dto.code && { code: dto.code }),
         ...(dto.credits && { credits: dto.credits }),
+        ...(dto.description !== undefined && { description: dto.description }),
       },
     });
   }

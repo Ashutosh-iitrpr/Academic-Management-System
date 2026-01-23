@@ -196,7 +196,7 @@ const ApprovalsPage = () => {
                               <VisibilityIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          <Tooltip title="Approve Instructor">
+                            <Tooltip title="Approve Offering">
                             <IconButton
                               size="small"
                               color="success"

@@ -1,13 +1,19 @@
 import {
   ArrayNotEmpty,
   IsArray,
+  IsOptional,
   IsString,
   Matches,
 } from "class-validator";
 
 export class RequestOfferingDto {
+  @IsOptional()
   @IsString()
-  courseId: string;
+  courseId?: string; // kept for backward compatibility
+
+  @IsOptional()
+  @IsString()
+  courseCode?: string; // preferred input for existing courses
 
   @IsString()
   semester: string;

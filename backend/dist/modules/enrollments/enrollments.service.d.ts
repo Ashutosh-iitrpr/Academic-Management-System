@@ -14,8 +14,8 @@ export declare class EnrollmentsService {
         approvedAt: Date | null;
         completedAt: Date | null;
         courseOfferingId: string;
-        enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
         studentId: string;
+        enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
         grade: import("@prisma/client").$Enums.Grade | null;
         source: import("@prisma/client").$Enums.EnrollmentSource;
     }>;
@@ -27,6 +27,7 @@ export declare class EnrollmentsService {
                 createdAt: Date;
                 code: string;
                 credits: number;
+                description: string | null;
             };
         } & {
             id: string;
@@ -52,8 +53,8 @@ export declare class EnrollmentsService {
         approvedAt: Date | null;
         completedAt: Date | null;
         courseOfferingId: string;
-        enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
         studentId: string;
+        enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
         grade: import("@prisma/client").$Enums.Grade | null;
         source: import("@prisma/client").$Enums.EnrollmentSource;
     })[]>;
@@ -70,8 +71,8 @@ export declare class EnrollmentsService {
         approvedAt: Date | null;
         completedAt: Date | null;
         courseOfferingId: string;
-        enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
         studentId: string;
+        enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
         grade: import("@prisma/client").$Enums.Grade | null;
         source: import("@prisma/client").$Enums.EnrollmentSource;
     })[]>;
@@ -82,8 +83,8 @@ export declare class EnrollmentsService {
         approvedAt: Date | null;
         completedAt: Date | null;
         courseOfferingId: string;
-        enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
         studentId: string;
+        enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
         grade: import("@prisma/client").$Enums.Grade | null;
         source: import("@prisma/client").$Enums.EnrollmentSource;
     }>;
@@ -94,8 +95,8 @@ export declare class EnrollmentsService {
         approvedAt: Date | null;
         completedAt: Date | null;
         courseOfferingId: string;
-        enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
         studentId: string;
+        enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
         grade: import("@prisma/client").$Enums.Grade | null;
         source: import("@prisma/client").$Enums.EnrollmentSource;
     }>;
@@ -106,8 +107,8 @@ export declare class EnrollmentsService {
         approvedAt: Date | null;
         completedAt: Date | null;
         courseOfferingId: string;
-        enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
         studentId: string;
+        enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
         grade: import("@prisma/client").$Enums.Grade | null;
         source: import("@prisma/client").$Enums.EnrollmentSource;
     }>;
@@ -118,8 +119,8 @@ export declare class EnrollmentsService {
         approvedAt: Date | null;
         completedAt: Date | null;
         courseOfferingId: string;
-        enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
         studentId: string;
+        enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
         grade: import("@prisma/client").$Enums.Grade | null;
         source: import("@prisma/client").$Enums.EnrollmentSource;
     }>;
@@ -183,8 +184,8 @@ export declare class EnrollmentsService {
                 approvedAt: Date | null;
                 completedAt: Date | null;
                 courseOfferingId: string;
-                enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
                 studentId: string;
+                enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
                 grade: import("@prisma/client").$Enums.Grade | null;
                 source: import("@prisma/client").$Enums.EnrollmentSource;
             })[];
@@ -201,8 +202,8 @@ export declare class EnrollmentsService {
                 approvedAt: Date | null;
                 completedAt: Date | null;
                 courseOfferingId: string;
-                enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
                 studentId: string;
+                enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
                 grade: import("@prisma/client").$Enums.Grade | null;
                 source: import("@prisma/client").$Enums.EnrollmentSource;
             })[];
@@ -219,8 +220,8 @@ export declare class EnrollmentsService {
                 approvedAt: Date | null;
                 completedAt: Date | null;
                 courseOfferingId: string;
-                enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
                 studentId: string;
+                enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
                 grade: import("@prisma/client").$Enums.Grade | null;
                 source: import("@prisma/client").$Enums.EnrollmentSource;
             })[];
@@ -237,8 +238,8 @@ export declare class EnrollmentsService {
                 approvedAt: Date | null;
                 completedAt: Date | null;
                 courseOfferingId: string;
-                enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
                 studentId: string;
+                enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
                 grade: import("@prisma/client").$Enums.Grade | null;
                 source: import("@prisma/client").$Enums.EnrollmentSource;
             })[];

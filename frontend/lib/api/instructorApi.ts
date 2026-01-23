@@ -9,6 +9,7 @@ export interface Course {
   code: string;
   name: string;
   credits: number;
+  description?: string;
 }
 
 export interface CourseOffering {
@@ -92,7 +93,8 @@ export interface GradeEntry {
 }
 
 export interface CreateOfferingDto {
-  courseId: string;
+  courseId?: string; // backward compatibility
+  courseCode?: string; // preferred identifier
   semester: string;
   timeSlot: string;
   allowedBranches: string[];
@@ -129,6 +131,20 @@ export const instructorApi = {
   requestCourseOffering: async (dto: CreateOfferingDto): Promise<CourseOffering> => {
     const response = await api.post('/instructor/course-offerings', dto);
     return response.data;
+  },
+
+  // Get list of semesters available (from Academic Calendar)
+  getSemesters: async (): Promise<string[]> => {
+    try {
+      const response = await api.get('/instructor/semesters');
+      return response.data;
+    } catch (error: any) {
+      // Swallow 404 or missing endpoint and let caller use fallback
+      if (error?.response?.status === 404) {
+        return [];
+      }
+      throw error;
+    }
   },
 
   // Finalize a course offering

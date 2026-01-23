@@ -18,6 +18,7 @@ const student_records_module_1 = require("./modules/student-records/student-reco
 const feedback_module_1 = require("./modules/feedback/feedback.module");
 const common_module_1 = require("./common/common.module");
 const admin_module_1 = require("./modules/admin/admin.module");
+const course_proposals_module_1 = require("./modules/course-proposals/course-proposals.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -33,6 +34,7 @@ exports.AppModule = AppModule = __decorate([
             auth_module_1.AuthModule,
             courses_module_1.CoursesModule,
             course_offerings_module_1.CourseOfferingsModule,
+            course_proposals_module_1.CourseProposalsModule,
             enrollments_module_1.EnrollmentsModule,
             student_records_module_1.StudentRecordsModule,
             feedback_module_1.FeedbackModule
