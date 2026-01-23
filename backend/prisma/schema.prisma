@@ -28,6 +28,7 @@ model User {
   enrollments Enrollment[]
   enrollmentTriggers EnrollmentTrigger[]
   courseOfferings CourseOffering[]
+  courseProposals CourseProposal[]
   otpTokens OtpToken[]
 
   feedbackForms    FeedbackForm[]
@@ -77,10 +78,40 @@ model Course {
   code      String   @unique
   name      String
   credits   Int
+  description String?
 
   offerings CourseOffering[]
+  proposals CourseProposal[]
 
   createdAt DateTime @default(now())
+
+  @@index([code])
+}
+
+enum CourseProposalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model CourseProposal {
+  id            String               @id @default(uuid())
+  
+  instructorId  String
+  instructor    User                 @relation(fields: [instructorId], references: [id])
+
+  code          String
+  name          String
+  credits       Int
+  description   String?
+
+  status        CourseProposalStatus @default(PENDING)
+  
+  courseId      String?
+  course        Course?              @relation(fields: [courseId], references: [id])
+
+  approvedAt    DateTime?
+  createdAt     DateTime             @default(now())
 }
 
 model CourseOffering {

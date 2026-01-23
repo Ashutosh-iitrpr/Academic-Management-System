@@ -81,6 +81,12 @@ const navigationItems: NavigationItem[] = [
     roles: ['ADMIN'],
   },
   {
+    label: 'Course Proposals',
+    path: '/admin/course-proposals',
+    icon: <SchoolIcon />,
+    roles: ['ADMIN'],
+  },
+  {
     label: 'Transcript Lookup',
     path: '/admin/transcript',
     icon: <DescriptionIcon />,
@@ -90,6 +96,12 @@ const navigationItems: NavigationItem[] = [
   {
     label: 'My Offerings',
     path: '/instructor/offerings',
+    icon: <SchoolIcon />,
+    roles: ['INSTRUCTOR'],
+  },
+  {
+    label: 'Propose New Course',
+    path: '/instructor/new-course',
     icon: <SchoolIcon />,
     roles: ['INSTRUCTOR'],
   },

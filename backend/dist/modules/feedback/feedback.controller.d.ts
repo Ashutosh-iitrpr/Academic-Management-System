@@ -7,20 +7,20 @@ export declare class FeedbackController {
     openFeedback(courseOfferingId: string, dto: CreateFeedbackFormDto, req: any): Promise<{
         id: string;
         createdAt: Date;
+        description: string | null;
         instructorId: string;
         courseOfferingId: string;
         title: string | null;
-        description: string | null;
         isOpen: boolean;
         closedAt: Date | null;
     }>;
     closeFeedback(formId: string, req: any): Promise<{
         id: string;
         createdAt: Date;
+        description: string | null;
         instructorId: string;
         courseOfferingId: string;
         title: string | null;
-        description: string | null;
         isOpen: boolean;
         closedAt: Date | null;
     }>;
@@ -30,8 +30,8 @@ export declare class FeedbackController {
         _count: {
             responses: number;
         };
-        title: string | null;
         description: string | null;
+        title: string | null;
         isOpen: boolean;
         closedAt: Date | null;
     }[]>;
@@ -90,8 +90,8 @@ export declare class FeedbackController {
             };
         };
         id: string;
-        title: string | null;
         description: string | null;
+        title: string | null;
     }[]>;
     submitFeedback(formId: string, dto: SubmitFeedbackDto, req: any): Promise<{
         id: string;

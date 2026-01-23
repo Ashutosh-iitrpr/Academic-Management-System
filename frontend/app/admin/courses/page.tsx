@@ -205,6 +205,7 @@ const CoursesPage = () => {
         name: formData.name,
         code: formData.code,
         credits: formData.credits,
+        description: formData.description || '',
       };
 
       await axiosClient.patch(`/admin/courses/${editingCourseId}`, payload);

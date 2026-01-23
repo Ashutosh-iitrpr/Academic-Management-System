@@ -42,9 +42,13 @@ import InfoIcon from '@mui/icons-material/Info';
 
 // Branch codes - these should match the backend validation
 const BRANCH_CODES = [
+  { code: 'CSB', name: 'Computer Science & Biosciences' },
+  { code: 'CEB', name: 'Computer Engineering & Biology' },
   { code: 'CSE', name: 'Computer Science Engineering' },
   { code: 'ECE', name: 'Electronics & Communication Engineering' },
+  { code: 'EEB', name: 'Electronics Engineering & Biology' },
   { code: 'MEE', name: 'Mechanical Engineering' },
+  { code: 'MEB', name: 'Mechanical Engineering & Biology' },
   { code: 'CEE', name: 'Civil Engineering' },
   { code: 'EEE', name: 'Electrical Engineering' },
   { code: 'CHE', name: 'Chemical Engineering' },
@@ -53,6 +57,12 @@ const BRANCH_CODES = [
   { code: 'PHY', name: 'Engineering Physics' },
   { code: 'CHM', name: 'Chemistry' },
 ];
+
+// Helper function to get branch name
+const getBranchName = (code: string) => {
+  const branch = BRANCH_CODES.find(b => b.code === code);
+  return branch ? branch.name : code;
+};
 
 // Enrollment types
 const ENROLLMENT_TYPES = [
@@ -159,10 +169,13 @@ const BatchEnrollment = () => {
   const currentYear = new Date().getFullYear();
   const batchYears = Array.from({ length: 6 }, (_, i) => currentYear - i);
 
-  // Filter available branches based on selected offering
+  // Get available branches from the selected offering
   const availableBranches = selectedOffering
-    ? BRANCH_CODES.filter(b => selectedOffering.allowedBranches.includes(b.code))
-    : BRANCH_CODES;
+    ? selectedOffering.allowedBranches.map(code => ({
+        code,
+        name: getBranchName(code)
+      }))
+    : [];
 
   return (
     <ProtectedRoute requiredRole="INSTRUCTOR">
@@ -216,7 +229,7 @@ const BatchEnrollment = () => {
                       <strong>Course:</strong> {selectedOffering?.course.code} - {selectedOffering?.course.name}
                     </Typography>
                     <Typography variant="body2" sx={{ color: '#666', mb: 1 }}>
-                      <strong>Branch:</strong> {formData.branchCode} ({BRANCH_CODES.find(b => b.code === formData.branchCode)?.name})
+                      <strong>Branch:</strong> {formData.branchCode} ({getBranchName(formData.branchCode)})
                     </Typography>
                     <Typography variant="body2" sx={{ color: '#666', mb: 1 }}>
                       <strong>Batch Year:</strong> {formData.batchYear}
@@ -295,14 +308,26 @@ const BatchEnrollment = () => {
                     )}
                     {selectedOffering && (
                       <Box sx={{ mt: 3, p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600, mb: 1, color: '#8B3A3A' }}>
+                          📚 Course Details:
+                        </Typography>
+                        <Typography variant="body2" sx={{ mb: 0.5 }}>
+                          <strong>Semester:</strong> {selectedOffering.semester}
+                        </Typography>
+                        <Typography variant="body2" sx={{ mb: 0.5 }}>
+                          <strong>Time Slot:</strong> {selectedOffering.timeSlot}
+                        </Typography>
+                        <Typography variant="body2" sx={{ mb: 1 }}>
+                          <strong>Credits:</strong> {selectedOffering.course.credits}
+                        </Typography>
                         <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
-                          Allowed Branches:
+                          Allowed Branches for this Course:
                         </Typography>
                         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                           {selectedOffering.allowedBranches.map((code: string) => (
                             <Chip
                               key={code}
-                              label={`${code} - ${BRANCH_CODES.find(b => b.code === code)?.name || code}`}
+                              label={`${code} - ${getBranchName(code)}`}
                               size="small"
                               sx={{ backgroundColor: '#8B3A3A', color: 'white' }}
                             />
@@ -319,22 +344,49 @@ const BatchEnrollment = () => {
                     <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
                       Configure Batch Details
                     </Typography>
+                    {selectedOffering && (
+                      <Alert severity="info" icon={<SchoolIcon />} sx={{ mb: 3 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                          Allowed Branches for {selectedOffering.course.code}:
+                        </Typography>
+                        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 1 }}>
+                          {selectedOffering.allowedBranches.map((code: string) => (
+                            <Chip
+                              key={code}
+                              label={`${code} - ${getBranchName(code)}`}
+                              size="small"
+                              sx={{ backgroundColor: '#8B3A3A', color: 'white' }}
+                            />
+                          ))}
+                        </Box>
+                      </Alert>
+                    )}
                     <Grid container spacing={3}>
                       <Grid item xs={12} md={6}>
                         <FormControl fullWidth>
-                          <InputLabel>Branch</InputLabel>
+                          <InputLabel>Branch *</InputLabel>
                           <Select
                             value={formData.branchCode}
-                            label="Branch"
+                            label="Branch *"
                             onChange={(e) => setFormData({ ...formData, branchCode: e.target.value })}
+                            disabled={!selectedOffering || availableBranches.length === 0}
                           >
-                            {availableBranches.map((branch) => (
-                              <MenuItem key={branch.code} value={branch.code}>
-                                {branch.code} - {branch.name}
-                              </MenuItem>
-                            ))}
+                            {availableBranches.length === 0 ? (
+                              <MenuItem disabled>No branches available</MenuItem>
+                            ) : (
+                              availableBranches.map((branch) => (
+                                <MenuItem key={branch.code} value={branch.code}>
+                                  {branch.code} - {branch.name}
+                                </MenuItem>
+                              ))
+                            )}
                           </Select>
                         </FormControl>
+                        {availableBranches.length === 0 && (
+                          <Typography variant="caption" sx={{ color: '#f44336', mt: 0.5, display: 'block' }}>
+                            No branches are allowed for this course offering
+                          </Typography>
+                        )}
                       </Grid>
                       <Grid item xs={12} md={6}>
                         <FormControl fullWidth>
@@ -425,7 +477,7 @@ const BatchEnrollment = () => {
                         <TableRow>
                           <TableCell sx={{ fontWeight: 600 }}>Branch</TableCell>
                           <TableCell>
-                            {formData.branchCode} - {BRANCH_CODES.find(b => b.code === formData.branchCode)?.name}
+                            {formData.branchCode} - {getBranchName(formData.branchCode)}
                           </TableCell>
                         </TableRow>
                         <TableRow>

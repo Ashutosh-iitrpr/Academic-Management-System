@@ -9,6 +9,7 @@ import { StudentRecordsModule } from "./modules/student-records/student-records.
 import { FeedbackModule } from "./modules/feedback/feedback.module";
 import { CommonModule } from "./common/common.module"
 import { AdminModule } from "./modules/admin/admin.module";
+import { CourseProposalsModule } from "./modules/course-proposals/course-proposals.module";
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -19,7 +20,8 @@ import { AdminModule } from "./modules/admin/admin.module";
     UsersModule, 
     AuthModule, 
     CoursesModule, 
-    CourseOfferingsModule, 
+    CourseOfferingsModule,
+    CourseProposalsModule,
     EnrollmentsModule, 
     StudentRecordsModule, 
     FeedbackModule

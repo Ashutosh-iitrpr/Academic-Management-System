@@ -77,6 +77,7 @@ export declare class AdminController {
         email: string;
         role: "STUDENT" | "INSTRUCTOR" | "ADMIN";
         entryNumber?: string;
+        department?: string;
     }): Promise<{
         name: string;
         email: string;
@@ -86,6 +87,12 @@ export declare class AdminController {
         id: string;
         isActive: boolean;
         createdAt: Date;
+    }>;
+    bulkUploadUsers(file: any): Promise<{
+        createdCount: number;
+        failedCount: number;
+        totalProcessed: number;
+        errors: string[];
     }>;
     deactivateUser(id: string): Promise<{
         name: string;
@@ -164,8 +171,8 @@ export declare class AdminController {
         approvedAt: Date | null;
         completedAt: Date | null;
         courseOfferingId: string;
-        enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
         studentId: string;
+        enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
         grade: import("@prisma/client").$Enums.Grade | null;
         source: import("@prisma/client").$Enums.EnrollmentSource;
     })[]>;
@@ -180,5 +187,6 @@ export declare class AdminController {
         createdAt: Date;
         code: string;
         credits: number;
+        description: string | null;
     }>;
 }

@@ -1,4 +1,4 @@
--- Create a test admin user
+-- Create a test admin user (skip if already exists)
 INSERT INTO "User" (id, email, name, role, "isActive", "entryNumber", "createdAt")
 VALUES (
   gen_random_uuid(),
@@ -8,4 +8,5 @@ VALUES (
   true,
   NULL,
   NOW()
-);
+)
+ON CONFLICT (email) DO NOTHING;

@@ -44,14 +44,26 @@ const InstructorOfferings = () => {
 
   // Form state for requesting new offering
   const [formData, setFormData] = useState({
-    courseId: '',
+    courseCode: '',
     semester: '',
     timeSlot: '',
     allowedBranches: [] as string[],
   });
 
-  const [courses, setCourses] = useState<any[]>([]);
-  const [coursesLoading, setCoursesLoading] = useState(false);
+  const [semesters, setSemesters] = useState<string[]>([]);
+  const [semestersLoading, setSemestersLoading] = useState(false);
+
+  const buildFallbackSemesters = (): string[] => {
+    const now = new Date();
+    const year = now.getFullYear();
+    // Provide 4 upcoming semester options
+    return [
+      `Spring ${year}`,
+      `Summer ${year}`,
+      `Fall ${year}`,
+      `Spring ${year + 1}`,
+    ];
+  };
 
   const fetchOfferings = async () => {
     try {
@@ -73,12 +85,30 @@ const InstructorOfferings = () => {
   const handleOpenRequestDialog = () => {
     setDialogType('request');
     setFormData({
-      courseId: '',
+      courseCode: '',
       semester: '',
       timeSlot: '',
       allowedBranches: [],
     });
     setOpenDialog(true);
+    // Fetch semesters when opening dialog
+    loadSemesters();
+  };
+
+  const loadSemesters = async () => {
+    try {
+      setSemestersLoading(true);
+      const semestersRes = await instructorApi.getSemesters();
+      const fromBackend = Array.isArray(semestersRes) ? semestersRes.filter(Boolean) : [];
+      setSemesters(fromBackend.length ? fromBackend : buildFallbackSemesters());
+    } catch (e) {
+      console.error('Failed to load semesters', e);
+      // Fall back to local options for semesters even if API fails
+      setSemesters(buildFallbackSemesters());
+      toast.error('Failed to load semesters');
+    } finally {
+      setSemestersLoading(false);
+    }
   };
 
   const handleOpenViewDialog = (offering: CourseOffering) => {
@@ -116,13 +146,30 @@ const InstructorOfferings = () => {
 
   const handleRequestOffering = async () => {
     try {
-      if (!formData.courseId || !formData.semester || !formData.timeSlot) {
+      if (!formData.semester || !formData.timeSlot) {
         toast.error('Please fill all required fields');
         return;
       }
 
+      if (!formData.courseCode) {
+        toast.error('Please provide the course code');
+        return;
+      }
+
+      if (!formData.allowedBranches || formData.allowedBranches.length === 0) {
+        toast.error('Select at least one allowed branch');
+        return;
+      }
+
       setSubmitting(true);
-      await instructorApi.requestCourseOffering(formData as CreateOfferingDto);
+      const payload: CreateOfferingDto = {
+        courseCode: formData.courseCode,
+        semester: formData.semester,
+        timeSlot: formData.timeSlot,
+        allowedBranches: formData.allowedBranches,
+      };
+
+      await instructorApi.requestCourseOffering(payload);
       toast.success('Course offering requested successfully');
       handleCloseDialog();
       fetchOfferings();
@@ -152,7 +199,6 @@ const InstructorOfferings = () => {
   };
 
   const BRANCHES = ['CSB', 'MEB', 'ECB', 'EEB', 'CEB'];
-  const SEMESTERS = ['Spring 2026', 'Summer 2026', 'Fall 2026', 'Spring 2027'];
   const TIME_SLOTS = ['PC1', 'PC2', 'PC3', 'PC4', 'PC5', 'PC6'];
 
   return (
@@ -394,13 +440,13 @@ const InstructorOfferings = () => {
           </DialogTitle>
           <DialogContent sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
             <TextField
-              label="Course ID"
+              label="Course Code"
               fullWidth
-              placeholder="Enter course ID (UUID)"
-              value={formData.courseId}
-              onChange={(e) => handleInputChange('courseId', e.target.value)}
-              error={!formData.courseId && formData.semester !== ''}
-              helperText={!formData.courseId && formData.semester !== '' ? 'Course ID is required' : ''}
+              placeholder="Enter course code (e.g., CS101)"
+              value={formData.courseCode}
+              onChange={(e) => handleInputChange('courseCode', e.target.value)}
+              required
+              helperText="If course doesn't exist, please propose it in 'Propose New Course' page first"
             />
 
             <FormControl fullWidth>
@@ -410,7 +456,9 @@ const InstructorOfferings = () => {
                 label="Semester"
                 onChange={(e) => handleInputChange('semester', e.target.value)}
               >
-                {SEMESTERS.map(sem => (
+                {semestersLoading ? (
+                  <MenuItem value="" disabled>Loading...</MenuItem>
+                ) : semesters.map(sem => (
                   <MenuItem key={sem} value={sem}>
                     {sem}
                   </MenuItem>

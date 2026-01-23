@@ -13,15 +13,22 @@ exports.RequestOfferingDto = void 0;
 const class_validator_1 = require("class-validator");
 class RequestOfferingDto {
     courseId;
+    courseCode;
     semester;
     timeSlot;
     allowedBranches;
 }
 exports.RequestOfferingDto = RequestOfferingDto;
 __decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], RequestOfferingDto.prototype, "courseId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], RequestOfferingDto.prototype, "courseCode", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)

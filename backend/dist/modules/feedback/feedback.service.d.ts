@@ -8,20 +8,20 @@ export declare class FeedbackService {
     }): Promise<{
         id: string;
         createdAt: Date;
+        description: string | null;
         instructorId: string;
         courseOfferingId: string;
         title: string | null;
-        description: string | null;
         isOpen: boolean;
         closedAt: Date | null;
     }>;
     closeFeedbackForm(instructorId: string, formId: string): Promise<{
         id: string;
         createdAt: Date;
+        description: string | null;
         instructorId: string;
         courseOfferingId: string;
         title: string | null;
-        description: string | null;
         isOpen: boolean;
         closedAt: Date | null;
     }>;
@@ -41,8 +41,8 @@ export declare class FeedbackService {
         _count: {
             responses: number;
         };
-        title: string | null;
         description: string | null;
+        title: string | null;
         isOpen: boolean;
         closedAt: Date | null;
     }[]>;
@@ -58,8 +58,8 @@ export declare class FeedbackService {
             };
         };
         id: string;
-        title: string | null;
         description: string | null;
+        title: string | null;
     }[]>;
     submitFeedback(studentId: string, feedbackFormId: string, dto: {
         ratingContent: number;

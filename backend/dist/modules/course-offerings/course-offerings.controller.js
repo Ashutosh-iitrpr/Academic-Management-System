@@ -40,6 +40,9 @@ let CourseOfferingsController = class CourseOfferingsController {
     getAllCourseOfferings() {
         return this.courseOfferingsService.getAllOfferings();
     }
+    getInstructorSemesters() {
+        return this.courseOfferingsService.getInstructorSemesters();
+    }
     getPendingOfferings() {
         return this.courseOfferingsService.getPendingOfferings();
     }
@@ -95,6 +98,13 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], CourseOfferingsController.prototype, "getAllCourseOfferings", null);
+__decorate([
+    (0, common_1.Get)("instructor/semesters"),
+    (0, roles_decorator_1.Roles)("INSTRUCTOR"),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], CourseOfferingsController.prototype, "getInstructorSemesters", null);
 __decorate([
     (0, common_1.Get)("admin/course-offerings"),
     (0, roles_decorator_1.Roles)("ADMIN"),
