@@ -19,7 +19,6 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  MenuItem,
   CircularProgress,
   IconButton,
   Tooltip,
@@ -42,6 +41,7 @@ import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
+import FilterListIcon from '@mui/icons-material/FilterList';
 
 interface User {
   id: string;
@@ -70,9 +70,10 @@ const UsersPage = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<User[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [search, setSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState('');
+  const [instructorDeptFilter, setInstructorDeptFilter] = useState('');
+  const [studentBatchFilter, setStudentBatchFilter] = useState('');
+  const [studentBranchFilter, setStudentBranchFilter] = useState('');
   const [openDialog, setOpenDialog] = useState(false);
   const [creatingUser, setCreatingUser] = useState(false);
   const [error, setError] = useState('');
@@ -92,10 +93,6 @@ const UsersPage = () => {
     fetchUsers();
   }, []);
 
-  useEffect(() => {
-    filterUsers();
-  }, [search, roleFilter, users]);
-
   const fetchUsers = async () => {
     try {
       setLoading(true);
@@ -107,25 +104,6 @@ const UsersPage = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const filterUsers = () => {
-    let filtered = users;
-
-    if (search) {
-      filtered = filtered.filter(
-        (u) =>
-          u.name.toLowerCase().includes(search.toLowerCase()) ||
-          u.email.toLowerCase().includes(search.toLowerCase()) ||
-          (u.entryNumber && u.entryNumber.toLowerCase().includes(search.toLowerCase()))
-      );
-    }
-
-    if (roleFilter) {
-      filtered = filtered.filter((u) => u.role === roleFilter);
-    }
-
-    setFilteredUsers(filtered);
   };
 
   const handleDeactivate = async (userId: string) => {
@@ -358,6 +336,36 @@ const UsersPage = () => {
     return colors[role] || '#999';
   };
 
+  const getBatch = (entryNumber?: string) => (entryNumber ? entryNumber.slice(0, 4) : '');
+  const getBranch = (entryNumber?: string) => (entryNumber ? entryNumber.slice(4, 7) : '');
+
+  const matchesSearch = (u: User) => {
+    const term = search.trim().toLowerCase();
+    if (!term) return true;
+    return (
+      u.name.toLowerCase().includes(term) ||
+      u.email.toLowerCase().includes(term) ||
+      (u.entryNumber && u.entryNumber.toLowerCase().includes(term))
+    );
+  };
+
+  const matchesInstructorFilters = (u: User) => {
+    if (!instructorDeptFilter.trim()) return true;
+    return (u.department || '').toLowerCase().includes(instructorDeptFilter.trim().toLowerCase());
+  };
+
+  const matchesStudentFilters = (u: User) => {
+    const batch = getBatch(u.entryNumber).toLowerCase();
+    const branch = getBranch(u.entryNumber).toLowerCase();
+    const batchOk = !studentBatchFilter.trim() || batch === studentBatchFilter.trim().toLowerCase();
+    const branchOk = !studentBranchFilter.trim() || branch === studentBranchFilter.trim().toLowerCase();
+    return batchOk && branchOk;
+  };
+
+  const admins = users.filter((u) => u.role === 'ADMIN' && matchesSearch(u));
+  const instructors = users.filter((u) => u.role === 'INSTRUCTOR' && matchesSearch(u) && matchesInstructorFilters(u));
+  const students = users.filter((u) => u.role === 'STUDENT' && matchesSearch(u) && matchesStudentFilters(u));
+
   if (loading) {
     return (
       <ProtectedRoute requiredRole="ADMIN">
@@ -402,9 +410,9 @@ const UsersPage = () => {
             </Button>
           </Box>
 
-          {/* Filters */}
+          {/* Global search */}
           <Grid container spacing={2} sx={{ mb: 3 }}>
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12}>
               <TextField
                 fullWidth
                 placeholder="Search by name, email, or entry number..."
@@ -415,29 +423,38 @@ const UsersPage = () => {
                 variant="outlined"
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                select
-                label="Filter by Role"
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
-                size="small"
-              >
-                <MenuItem value="">All Roles</MenuItem>
-                <MenuItem value="ADMIN">Admin</MenuItem>
-                <MenuItem value="INSTRUCTOR">Instructor</MenuItem>
-                <MenuItem value="STUDENT">Student</MenuItem>
-              </TextField>
-            </Grid>
           </Grid>
 
-          {/* Users Table */}
-          <Card>
+          {/* Students Table */}
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 1 }}>
+            <TextField
+              label="Student Batch"
+              placeholder="e.g., 2023"
+              value={studentBatchFilter}
+              onChange={(e) => setStudentBatchFilter(e.target.value)}
+              size="small"
+              InputProps={{ startAdornment: <FilterListIcon fontSize="small" sx={{ mr: 1, color: '#999' }} /> }}
+              sx={{ minWidth: 180 }}
+            />
+            <TextField
+              label="Student Branch"
+              placeholder="e.g., CSB"
+              value={studentBranchFilter}
+              onChange={(e) => setStudentBranchFilter(e.target.value)}
+              size="small"
+              InputProps={{ startAdornment: <FilterListIcon fontSize="small" sx={{ mr: 1, color: '#999' }} /> }}
+              sx={{ minWidth: 180 }}
+            />
+          </Box>
+          <Card sx={{ mb: 3 }}>
             <CardContent sx={{ p: 0, overflow: 'auto' }}>
-              {filteredUsers.length === 0 ? (
+              <Box sx={{ p: 2, borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>Students</Typography>
+                <Chip label={`${students.length}`} size="small" />
+              </Box>
+              {students.length === 0 ? (
                 <Box sx={{ p: 3, textAlign: 'center' }}>
-                  <Typography color="textSecondary">No users found</Typography>
+                  <Typography color="textSecondary">No students found</Typography>
                 </Box>
               ) : (
                 <Table>
@@ -445,15 +462,15 @@ const UsersPage = () => {
                     <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
                       <TableCell sx={{ fontWeight: 700 }}>Name</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Email</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Role</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Entry Number</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>Department</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Batch</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Branch</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Actions</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {filteredUsers.map((user) => (
+                    {students.map((user) => (
                       <TableRow key={user.id} sx={{ '&:hover': { backgroundColor: '#f9f9f9' } }}>
                         <TableCell>
                           <Typography sx={{ fontWeight: 500 }}>{user.name}</Typography>
@@ -461,19 +478,200 @@ const UsersPage = () => {
                         <TableCell>
                           <Typography sx={{ fontSize: '0.9rem', color: '#666' }}>{user.email}</Typography>
                         </TableCell>
+                        <TableCell>{user.entryNumber || '-'}</TableCell>
+                        <TableCell>{getBatch(user.entryNumber) || '-'}</TableCell>
+                        <TableCell>{getBranch(user.entryNumber) || '-'}</TableCell>
                         <TableCell>
                           <Chip
-                            label={user.role}
-                            sx={{
-                              backgroundColor: getRoleColor(user.role),
-                              color: '#fff',
-                              fontWeight: 600,
-                            }}
+                            label={user.isActive ? 'Active' : 'Inactive'}
+                            color={user.isActive ? 'success' : 'error'}
                             size="small"
                           />
                         </TableCell>
-                        <TableCell>{user.entryNumber || '-'}</TableCell>
+                        <TableCell>
+                          <Tooltip title="Edit user">
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              onClick={() => {
+                                setEditFormData({
+                                  id: user.id,
+                                  name: user.name,
+                                  email: user.email,
+                                  role: user.role as EditUserForm['role'],
+                                  entryNumber: user.entryNumber || '',
+                                  department: user.department || '',
+                                });
+                                setError('');
+                                setSuccess('');
+                                setEditDialogOpen(true);
+                              }}
+                            >
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          {user.isActive ? (
+                            <Tooltip title="Deactivate">
+                              <IconButton
+                                size="small"
+                                color="warning"
+                                onClick={() => handleDeactivate(user.id)}
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          ) : (
+                            <Tooltip title="Activate">
+                              <IconButton
+                                size="small"
+                                color="success"
+                                onClick={() => handleActivate(user.id)}
+                              >
+                                <AddIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Instructors Table */}
+          <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 1, gap: 2 }}>
+            <TextField
+              label="Instructor Department"
+              placeholder="e.g., Computer Science"
+              value={instructorDeptFilter}
+              onChange={(e) => setInstructorDeptFilter(e.target.value)}
+              size="small"
+              InputProps={{ startAdornment: <FilterListIcon fontSize="small" sx={{ mr: 1, color: '#999' }} /> }}
+              sx={{ minWidth: 260 }}
+            />
+          </Box>
+          <Card sx={{ mb: 3 }}>
+            <CardContent sx={{ p: 0, overflow: 'auto' }}>
+              <Box sx={{ p: 2, borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>Instructors</Typography>
+                <Chip label={`${instructors.length}`} size="small" />
+              </Box>
+              {instructors.length === 0 ? (
+                <Box sx={{ p: 3, textAlign: 'center' }}>
+                  <Typography color="textSecondary">No instructors found</Typography>
+                </Box>
+              ) : (
+                <Table>
+                  <TableHead>
+                    <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                      <TableCell sx={{ fontWeight: 700 }}>Name</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Email</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Department</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {instructors.map((user) => (
+                      <TableRow key={user.id} sx={{ '&:hover': { backgroundColor: '#f9f9f9' } }}>
+                        <TableCell>
+                          <Typography sx={{ fontWeight: 500 }}>{user.name}</Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography sx={{ fontSize: '0.9rem', color: '#666' }}>{user.email}</Typography>
+                        </TableCell>
                         <TableCell>{user.department || '-'}</TableCell>
+                        <TableCell>
+                          <Chip
+                            label={user.isActive ? 'Active' : 'Inactive'}
+                            color={user.isActive ? 'success' : 'error'}
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Tooltip title="Edit user">
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              onClick={() => {
+                                setEditFormData({
+                                  id: user.id,
+                                  name: user.name,
+                                  email: user.email,
+                                  role: user.role as EditUserForm['role'],
+                                  entryNumber: user.entryNumber || '',
+                                  department: user.department || '',
+                                });
+                                setError('');
+                                setSuccess('');
+                                setEditDialogOpen(true);
+                              }}
+                            >
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          {user.isActive ? (
+                            <Tooltip title="Deactivate">
+                              <IconButton
+                                size="small"
+                                color="warning"
+                                onClick={() => handleDeactivate(user.id)}
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          ) : (
+                            <Tooltip title="Activate">
+                              <IconButton
+                                size="small"
+                                color="success"
+                                onClick={() => handleActivate(user.id)}
+                              >
+                                <AddIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Admins Table */}
+          <Card sx={{ mb: 3 }}>
+            <CardContent sx={{ p: 0, overflow: 'auto' }}>
+              <Box sx={{ p: 2, borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>Admins</Typography>
+                <Chip label={`${admins.length}`} size="small" />
+              </Box>
+              {admins.length === 0 ? (
+                <Box sx={{ p: 3, textAlign: 'center' }}>
+                  <Typography color="textSecondary">No admins found</Typography>
+                </Box>
+              ) : (
+                <Table>
+                  <TableHead>
+                    <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                      <TableCell sx={{ fontWeight: 700 }}>Name</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Email</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {admins.map((user) => (
+                      <TableRow key={user.id} sx={{ '&:hover': { backgroundColor: '#f9f9f9' } }}>
+                        <TableCell>
+                          <Typography sx={{ fontWeight: 500 }}>{user.name}</Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography sx={{ fontSize: '0.9rem', color: '#666' }}>{user.email}</Typography>
+                        </TableCell>
                         <TableCell>
                           <Chip
                             label={user.isActive ? 'Active' : 'Inactive'}
@@ -572,174 +770,173 @@ const UsersPage = () => {
                 </Typography>
                 <Typography variant="h6" sx={{ fontWeight: 700 }}>
                   {users.filter((u) => u.role === 'STUDENT').length}
-
-                        {/* Create User Dialog */}
-                        <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-                          <DialogTitle sx={{ fontWeight: 700 }}>Create New User</DialogTitle>
-                          <DialogContent sx={{ pt: 2 }}>
-                            {error && (
-                              <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
-                                {error}
-                              </Alert>
-                            )}
-                            {success && (
-                              <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess('')}>
-                                {success}
-                              </Alert>
-                            )}
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                              <TextField
-                                fullWidth
-                                label="Full Name"
-                                placeholder="e.g., John Doe"
-                                value={formData.name}
-                                onChange={(e) => handleInputChange('name', e.target.value)}
-                                disabled={creatingUser}
-                              />
-                              <TextField
-                                fullWidth
-                                label="Email"
-                                type="email"
-                                placeholder="e.g., john@university.edu"
-                                value={formData.email}
-                                onChange={(e) => handleInputChange('email', e.target.value)}
-                                disabled={creatingUser}
-                              />
-                              <FormControl component="fieldset" disabled={creatingUser}>
-                                <FormLabel component="legend" sx={{ fontWeight: 600, color: '#1a1a1a', mb: 1 }}>
-                                  Role
-                                </FormLabel>
-                                <RadioGroup
-                                  value={formData.role}
-                                  onChange={(e) => handleInputChange('role', e.target.value as any)}
-                                >
-                                  <FormControlLabel 
-                                    value="STUDENT" 
-                                    control={<Radio sx={{ color: '#4CAF50', '&.Mui-checked': { color: '#4CAF50' } }} />} 
-                                    label="Student" 
-                                  />
-                                  <FormControlLabel 
-                                    value="INSTRUCTOR" 
-                                    control={<Radio sx={{ color: '#2E5090', '&.Mui-checked': { color: '#2E5090' } }} />} 
-                                    label="Instructor" 
-                                  />
-                                  <FormControlLabel 
-                                    value="ADMIN" 
-                                    control={<Radio sx={{ color: '#8B3A3A', '&.Mui-checked': { color: '#8B3A3A' } }} />} 
-                                    label="Admin" 
-                                  />
-                                </RadioGroup>
-                              </FormControl>
-                              {formData.role === 'STUDENT' && (
-                                <TextField
-                                  fullWidth
-                                  label="Entry Number"
-                                  placeholder="e.g., CS2024001"
-                                  value={formData.entryNumber || ''}
-                                  onChange={(e) => handleInputChange('entryNumber', e.target.value)}
-                                  disabled={creatingUser}
-                                />
-                              )}
-                              {formData.role === 'INSTRUCTOR' && (
-                                <TextField
-                                  fullWidth
-                                  label="Department"
-                                  placeholder="e.g., Computer Science"
-                                  value={formData.department || ''}
-                                  onChange={(e) => handleInputChange('department', e.target.value)}
-                                  disabled={creatingUser}
-                                />
-                              )}
-                            </Box>
-                          </DialogContent>
-                          <DialogActions>
-                            <Button onClick={handleCloseDialog} disabled={creatingUser}>
-                              Cancel
-                            </Button>
-                            <Button
-                              variant="contained"
-                              sx={{ backgroundColor: '#8B3A3A' }}
-                              onClick={handleCreateUser}
-                              disabled={creatingUser}
-                            >
-                              {creatingUser ? <CircularProgress size={24} /> : 'Create User'}
-                            </Button>
-                          </DialogActions>
-                        </Dialog>
-
-                        {/* Department Edit Dialog */}
-                        <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth="sm" fullWidth>
-                          <DialogTitle sx={{ fontWeight: 700 }}>Edit User</DialogTitle>
-                          <DialogContent sx={{ pt: 2 }}>
-                            {error && (
-                              <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
-                                {error}
-                              </Alert>
-                            )}
-                            {success && (
-                              <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess('')}>
-                                {success}
-                              </Alert>
-                            )}
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                              <TextField
-                                fullWidth
-                                label="Full Name"
-                                placeholder="e.g., John Doe"
-                                value={editFormData?.name || ''}
-                                onChange={(e) => handleEditInputChange('name', e.target.value)}
-                                disabled={updatingUser || !editFormData}
-                              />
-                              <TextField
-                                fullWidth
-                                label="Email"
-                                type="email"
-                                placeholder="e.g., john@university.edu"
-                                value={editFormData?.email || ''}
-                                onChange={(e) => handleEditInputChange('email', e.target.value)}
-                                disabled={updatingUser || !editFormData}
-                              />
-                              <TextField fullWidth label="Role" value={editFormData?.role || ''} disabled />
-                              {editFormData?.role === 'STUDENT' && (
-                                <TextField
-                                  fullWidth
-                                  label="Entry Number"
-                                  placeholder="e.g., 2023CSB1289"
-                                  value={editFormData.entryNumber || ''}
-                                  onChange={(e) => handleEditInputChange('entryNumber', e.target.value)}
-                                  disabled={updatingUser}
-                                />
-                              )}
-                              {editFormData?.role === 'INSTRUCTOR' && (
-                                <TextField
-                                  fullWidth
-                                  label="Department"
-                                  placeholder="e.g., Computer Science"
-                                  value={editFormData.department || ''}
-                                  onChange={(e) => handleEditInputChange('department', e.target.value)}
-                                  disabled={updatingUser}
-                                />
-                              )}
-                            </Box>
-                          </DialogContent>
-                          <DialogActions>
-                            <Button onClick={() => setEditDialogOpen(false)} disabled={updatingUser}>
-                              Cancel
-                            </Button>
-                            <Button
-                              variant="contained"
-                              sx={{ backgroundColor: '#8B3A3A' }}
-                              onClick={handleUpdateUser}
-                              disabled={updatingUser || !editFormData}
-                            >
-                              {updatingUser ? <CircularProgress size={24} /> : 'Save Changes'}
-                            </Button>
-                          </DialogActions>
-                        </Dialog>
                 </Typography>
               </CardContent>
             </Card>
           </Box>
+          {/* Create User Dialog */}
+          <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+            <DialogTitle sx={{ fontWeight: 700 }}>Create New User</DialogTitle>
+            <DialogContent sx={{ pt: 2 }}>
+              {error && (
+                <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
+                  {error}
+                </Alert>
+              )}
+              {success && (
+                <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess('')}>
+                  {success}
+                </Alert>
+              )}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <TextField
+                  fullWidth
+                  label="Full Name"
+                  placeholder="e.g., John Doe"
+                  value={formData.name}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  disabled={creatingUser}
+                />
+                <TextField
+                  fullWidth
+                  label="Email"
+                  type="email"
+                  placeholder="e.g., john@university.edu"
+                  value={formData.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  disabled={creatingUser}
+                />
+                <FormControl component="fieldset" disabled={creatingUser}>
+                  <FormLabel component="legend" sx={{ fontWeight: 600, color: '#1a1a1a', mb: 1 }}>
+                    Role
+                  </FormLabel>
+                  <RadioGroup
+                    value={formData.role}
+                    onChange={(e) => handleInputChange('role', e.target.value as any)}
+                  >
+                    <FormControlLabel
+                      value="STUDENT"
+                      control={<Radio sx={{ color: '#4CAF50', '&.Mui-checked': { color: '#4CAF50' } }} />}
+                      label="Student"
+                    />
+                    <FormControlLabel
+                      value="INSTRUCTOR"
+                      control={<Radio sx={{ color: '#2E5090', '&.Mui-checked': { color: '#2E5090' } }} />}
+                      label="Instructor"
+                    />
+                    <FormControlLabel
+                      value="ADMIN"
+                      control={<Radio sx={{ color: '#8B3A3A', '&.Mui-checked': { color: '#8B3A3A' } }} />}
+                      label="Admin"
+                    />
+                  </RadioGroup>
+                </FormControl>
+                {formData.role === 'STUDENT' && (
+                  <TextField
+                    fullWidth
+                    label="Entry Number"
+                    placeholder="e.g., CS2024001"
+                    value={formData.entryNumber || ''}
+                    onChange={(e) => handleInputChange('entryNumber', e.target.value)}
+                    disabled={creatingUser}
+                  />
+                )}
+                {formData.role === 'INSTRUCTOR' && (
+                  <TextField
+                    fullWidth
+                    label="Department"
+                    placeholder="e.g., Computer Science"
+                    value={formData.department || ''}
+                    onChange={(e) => handleInputChange('department', e.target.value)}
+                    disabled={creatingUser}
+                  />
+                )}
+              </Box>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleCloseDialog} disabled={creatingUser}>
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                sx={{ backgroundColor: '#8B3A3A' }}
+                onClick={handleCreateUser}
+                disabled={creatingUser}
+              >
+                {creatingUser ? <CircularProgress size={24} /> : 'Create User'}
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          {/* Edit User Dialog */}
+          <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth="sm" fullWidth>
+            <DialogTitle sx={{ fontWeight: 700 }}>Edit User</DialogTitle>
+            <DialogContent sx={{ pt: 2 }}>
+              {error && (
+                <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
+                  {error}
+                </Alert>
+              )}
+              {success && (
+                <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess('')}>
+                  {success}
+                </Alert>
+              )}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <TextField
+                  fullWidth
+                  label="Full Name"
+                  placeholder="e.g., John Doe"
+                  value={editFormData?.name || ''}
+                  onChange={(e) => handleEditInputChange('name', e.target.value)}
+                  disabled={updatingUser || !editFormData}
+                />
+                <TextField
+                  fullWidth
+                  label="Email"
+                  type="email"
+                  placeholder="e.g., john@university.edu"
+                  value={editFormData?.email || ''}
+                  onChange={(e) => handleEditInputChange('email', e.target.value)}
+                  disabled={updatingUser || !editFormData}
+                />
+                <TextField fullWidth label="Role" value={editFormData?.role || ''} disabled />
+                {editFormData?.role === 'STUDENT' && (
+                  <TextField
+                    fullWidth
+                    label="Entry Number"
+                    placeholder="e.g., 2023CSB1289"
+                    value={editFormData.entryNumber || ''}
+                    onChange={(e) => handleEditInputChange('entryNumber', e.target.value)}
+                    disabled={updatingUser}
+                  />
+                )}
+                {editFormData?.role === 'INSTRUCTOR' && (
+                  <TextField
+                    fullWidth
+                    label="Department"
+                    placeholder="e.g., Computer Science"
+                    value={editFormData.department || ''}
+                    onChange={(e) => handleEditInputChange('department', e.target.value)}
+                    disabled={updatingUser}
+                  />
+                )}
+              </Box>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setEditDialogOpen(false)} disabled={updatingUser}>
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                sx={{ backgroundColor: '#8B3A3A' }}
+                onClick={handleUpdateUser}
+                disabled={updatingUser || !editFormData}
+              >
+                {updatingUser ? <CircularProgress size={24} /> : 'Save Changes'}
+              </Button>
+            </DialogActions>
+          </Dialog>
         </Box>
       </DashboardLayout>
     </ProtectedRoute>
