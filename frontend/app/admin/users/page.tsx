@@ -62,6 +62,10 @@ interface CreateUserForm {
   department?: string;
 }
 
+interface EditUserForm extends CreateUserForm {
+  id: string;
+}
+
 const UsersPage = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -73,10 +77,9 @@ const UsersPage = () => {
   const [creatingUser, setCreatingUser] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [departmentDialogOpen, setDepartmentDialogOpen] = useState(false);
-  const [newDepartment, setNewDepartment] = useState('');
-  const [updatingDepartment, setUpdatingDepartment] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editFormData, setEditFormData] = useState<EditUserForm | null>(null);
+  const [updatingUser, setUpdatingUser] = useState(false);
   const [formData, setFormData] = useState<CreateUserForm>({
     name: '',
     email: '',
@@ -158,42 +161,48 @@ const UsersPage = () => {
       setError('Only instructors can have departments');
       return;
     }
-    setEditingUser(user);
-    setNewDepartment(user.department || '');
-    setDepartmentDialogOpen(true);
+    setEditFormData({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role as EditUserForm['role'],
+      entryNumber: user.entryNumber || '',
+      department: user.department || '',
+    });
+    setError('');
+    setSuccess('');
+    setEditDialogOpen(true);
   };
 
   const handleUpdateDepartment = async () => {
-    if (!editingUser || !newDepartment.trim()) {
+    if (!editFormData || !editFormData.department?.trim()) {
       setError('Department cannot be empty');
       return;
     }
 
     try {
-      setUpdatingDepartment(true);
+      setUpdatingUser(true);
       setError('');
-      await axiosClient.patch(`/admin/users/${editingUser.id}/department`, {
-        department: newDepartment,
+      await axiosClient.patch(`/admin/users/${editFormData.id}`, {
+        department: editFormData.department,
       });
-      setSuccess('Department updated successfully');
-      setDepartmentDialogOpen(false);
-      setEditingUser(null);
-      setNewDepartment('');
+      setSuccess('User updated successfully');
+      setEditDialogOpen(false);
+      setEditFormData(null);
       setTimeout(() => setSuccess(''), 3000);
       fetchUsers();
     } catch (error: any) {
-      const errorMsg = error?.response?.data?.message || 'Failed to update department';
-      console.error('Error updating department:', error);
+      const errorMsg = error?.response?.data?.message || 'Failed to update user';
+      console.error('Error updating user:', error);
       setError(errorMsg);
     } finally {
-      setUpdatingDepartment(false);
+      setUpdatingUser(false);
     }
   };
 
   const handleCloseDepartmentDialog = () => {
-    setDepartmentDialogOpen(false);
-    setEditingUser(null);
-    setNewDepartment('');
+    setEditDialogOpen(false);
+    setEditFormData(null);
   };
 
   const handleOpenDialog = () => {
@@ -221,6 +230,10 @@ const UsersPage = () => {
     }));
   };
 
+  const handleEditInputChange = (field: keyof EditUserForm, value: string) => {
+    setEditFormData((prev) => (prev ? { ...prev, [field]: value } : prev));
+  };
+
   const validateForm = () => {
     if (!formData.name.trim()) {
       setError('Name is required');
@@ -234,6 +247,32 @@ const UsersPage = () => {
       setError('Entry number is required for students');
       return false;
     }
+    return true;
+  };
+
+  const validateEditForm = () => {
+    if (!editFormData) return false;
+
+    if (!editFormData.name.trim()) {
+      setError('Name is required');
+      return false;
+    }
+
+    if (!editFormData.email.trim()) {
+      setError('Email is required');
+      return false;
+    }
+
+    if (editFormData.role === 'STUDENT' && !editFormData.entryNumber?.trim()) {
+      setError('Entry number is required for students');
+      return false;
+    }
+
+    if (editFormData.role === 'INSTRUCTOR' && !editFormData.department?.trim()) {
+      setError('Department is required for instructors');
+      return false;
+    }
+
     return true;
   };
 
@@ -271,6 +310,42 @@ const UsersPage = () => {
       setError(err.response?.data?.message || 'Failed to create user');
     } finally {
       setCreatingUser(false);
+    }
+  };
+
+  const handleUpdateUser = async () => {
+    if (!editFormData) return;
+    if (!validateEditForm()) return;
+
+    try {
+      setUpdatingUser(true);
+      setError('');
+
+      const payload: any = {
+        name: editFormData.name,
+        email: editFormData.email,
+      };
+
+      if (editFormData.role === 'STUDENT') {
+        payload.entryNumber = editFormData.entryNumber;
+      }
+
+      if (editFormData.role === 'INSTRUCTOR') {
+        payload.department = editFormData.department;
+      }
+
+      await axiosClient.patch(`/admin/users/${editFormData.id}`, payload);
+      setSuccess('User updated successfully');
+      setEditDialogOpen(false);
+      setEditFormData(null);
+      setTimeout(() => setSuccess(''), 3000);
+      fetchUsers();
+    } catch (error: any) {
+      const errorMsg = error?.response?.data?.message || 'Failed to update user';
+      console.error('Error updating user:', error);
+      setError(errorMsg);
+    } finally {
+      setUpdatingUser(false);
     }
   };
 
@@ -407,17 +482,27 @@ const UsersPage = () => {
                           />
                         </TableCell>
                         <TableCell>
-                          {user.role === 'INSTRUCTOR' && (
-                            <Tooltip title="Edit Department">
-                              <IconButton
-                                size="small"
-                                color="primary"
-                                onClick={() => handleEditDepartment(user)}
-                              >
-                                <EditIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          )}
+                          <Tooltip title="Edit user">
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              onClick={() => {
+                                setEditFormData({
+                                  id: user.id,
+                                  name: user.name,
+                                  email: user.email,
+                                  role: user.role as EditUserForm['role'],
+                                  entryNumber: user.entryNumber || '',
+                                  department: user.department || '',
+                                });
+                                setError('');
+                                setSuccess('');
+                                setEditDialogOpen(true);
+                              }}
+                            >
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
                           {user.isActive ? (
                             <Tooltip title="Deactivate">
                               <IconButton
@@ -583,8 +668,8 @@ const UsersPage = () => {
                         </Dialog>
 
                         {/* Department Edit Dialog */}
-                        <Dialog open={departmentDialogOpen} onClose={handleCloseDepartmentDialog} maxWidth="sm" fullWidth>
-                          <DialogTitle>Update Instructor Department</DialogTitle>
+                        <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth="sm" fullWidth>
+                          <DialogTitle sx={{ fontWeight: 700 }}>Edit User</DialogTitle>
                           <DialogContent sx={{ pt: 2 }}>
                             {error && (
                               <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
@@ -599,31 +684,55 @@ const UsersPage = () => {
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                               <TextField
                                 fullWidth
-                                label="Instructor Name"
-                                value={editingUser?.name || ''}
-                                disabled
+                                label="Full Name"
+                                placeholder="e.g., John Doe"
+                                value={editFormData?.name || ''}
+                                onChange={(e) => handleEditInputChange('name', e.target.value)}
+                                disabled={updatingUser || !editFormData}
                               />
                               <TextField
                                 fullWidth
-                                label="Current Department"
-                                value={newDepartment}
-                                onChange={(e) => setNewDepartment(e.target.value)}
-                                placeholder="e.g., Computer Science, Mathematics"
-                                disabled={updatingDepartment}
+                                label="Email"
+                                type="email"
+                                placeholder="e.g., john@university.edu"
+                                value={editFormData?.email || ''}
+                                onChange={(e) => handleEditInputChange('email', e.target.value)}
+                                disabled={updatingUser || !editFormData}
                               />
+                              <TextField fullWidth label="Role" value={editFormData?.role || ''} disabled />
+                              {editFormData?.role === 'STUDENT' && (
+                                <TextField
+                                  fullWidth
+                                  label="Entry Number"
+                                  placeholder="e.g., 2023CSB1289"
+                                  value={editFormData.entryNumber || ''}
+                                  onChange={(e) => handleEditInputChange('entryNumber', e.target.value)}
+                                  disabled={updatingUser}
+                                />
+                              )}
+                              {editFormData?.role === 'INSTRUCTOR' && (
+                                <TextField
+                                  fullWidth
+                                  label="Department"
+                                  placeholder="e.g., Computer Science"
+                                  value={editFormData.department || ''}
+                                  onChange={(e) => handleEditInputChange('department', e.target.value)}
+                                  disabled={updatingUser}
+                                />
+                              )}
                             </Box>
                           </DialogContent>
                           <DialogActions>
-                            <Button onClick={handleCloseDepartmentDialog} disabled={updatingDepartment}>
+                            <Button onClick={() => setEditDialogOpen(false)} disabled={updatingUser}>
                               Cancel
                             </Button>
                             <Button
                               variant="contained"
                               sx={{ backgroundColor: '#8B3A3A' }}
-                              onClick={handleUpdateDepartment}
-                              disabled={updatingDepartment}
+                              onClick={handleUpdateUser}
+                              disabled={updatingUser || !editFormData}
                             >
-                              {updatingDepartment ? <CircularProgress size={24} /> : 'Update'}
+                              {updatingUser ? <CircularProgress size={24} /> : 'Save Changes'}
                             </Button>
                           </DialogActions>
                         </Dialog>

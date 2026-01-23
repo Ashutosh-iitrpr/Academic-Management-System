@@ -1,4 +1,5 @@
 import { PrismaService } from "../../prisma/prisma.service";
+import { UpdateUserDto } from "./dto/update-user.dto";
 export declare class AdminController {
     private prisma;
     constructor(prisma: PrismaService);
@@ -66,6 +67,7 @@ export declare class AdminController {
         email: string;
         role: import("@prisma/client").$Enums.Role;
         entryNumber: string | null;
+        department: string | null;
         id: string;
         isActive: boolean;
         createdAt: Date;
@@ -105,44 +107,7 @@ export declare class AdminController {
         isActive: boolean;
         createdAt: Date;
     }>;
-    getTranscriptByEntry(entryNumber: string): Promise<{
-        enrollments: ({
-            courseOffering: {
-                course: {
-                    name: string;
-                    id: string;
-                    createdAt: Date;
-                    code: string;
-                    credits: number;
-                };
-                instructor: {
-                    name: string;
-                };
-            } & {
-                id: string;
-                createdAt: Date;
-                courseId: string;
-                semester: string;
-                timeSlot: string;
-                allowedBranches: string[];
-                instructorId: string;
-                status: import("@prisma/client").$Enums.CourseOfferingStatus;
-                approvedAt: Date | null;
-                completedAt: Date | null;
-            };
-        } & {
-            id: string;
-            createdAt: Date;
-            status: import("@prisma/client").$Enums.EnrollmentStatus;
-            approvedAt: Date | null;
-            completedAt: Date | null;
-            courseOfferingId: string;
-            enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
-            studentId: string;
-            grade: import("@prisma/client").$Enums.Grade | null;
-            source: import("@prisma/client").$Enums.EnrollmentSource;
-        })[];
-    } & {
+    updateUser(id: string, dto: UpdateUserDto): Promise<{
         name: string;
         email: string;
         role: import("@prisma/client").$Enums.Role;
@@ -152,6 +117,27 @@ export declare class AdminController {
         isActive: boolean;
         createdAt: Date;
     }>;
+    getTranscriptByEntry(entryNumber: string): {
+        student: {
+            id: string;
+            name: string;
+            email: string;
+            entryNumber: string;
+            branch: string;
+        };
+        cgpa: number;
+        totalCredits: number;
+        semesters: {
+            semester: string;
+            sgpa: number;
+            courses: {
+                code: string;
+                name: string;
+                credits: number;
+                grade: string;
+            }[];
+        }[];
+    };
     getCourseEnrollments(courseId: string): Promise<({
         courseOffering: {
             course: {

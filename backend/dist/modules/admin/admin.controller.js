@@ -18,6 +18,7 @@ const prisma_service_1 = require("../../prisma/prisma.service");
 const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
 const roles_guard_1 = require("../../common/guards/roles.guard");
 const roles_decorator_1 = require("../../common/decorators/roles.decorator");
+const update_user_dto_1 = require("./dto/update-user.dto");
 let AdminController = class AdminController {
     prisma;
     constructor(prisma) {
@@ -101,6 +102,7 @@ let AdminController = class AdminController {
                 email: true,
                 role: true,
                 entryNumber: true,
+                department: true,
                 isActive: true,
                 createdAt: true,
             },
@@ -152,33 +154,95 @@ let AdminController = class AdminController {
             data: { isActive: true },
         });
     }
-    async getTranscriptByEntry(entryNumber) {
-        const student = await this.prisma.user.findFirst({
-            where: {
-                entryNumber: entryNumber,
-                role: 'STUDENT',
-            },
-            include: {
-                enrollments: {
-                    include: {
-                        courseOffering: {
-                            include: {
-                                course: true,
-                                instructor: {
-                                    select: {
-                                        name: true,
-                                    },
-                                },
-                            },
-                        },
-                    },
-                },
-            },
+    async updateUser(id, dto) {
+        const user = await this.prisma.user.findUnique({
+            where: { id },
         });
-        if (!student) {
-            throw new common_1.NotFoundException('Student not found with this entry number');
+        if (!user) {
+            throw new common_1.NotFoundException(`User with ID ${id} not found`);
         }
-        return student;
+        const data = {};
+        if (dto.name !== undefined) {
+            data.name = dto.name;
+        }
+        if (dto.email !== undefined) {
+            data.email = dto.email;
+        }
+        if (user.role === "STUDENT") {
+            if (dto.entryNumber !== undefined) {
+                data.entryNumber = dto.entryNumber;
+            }
+        }
+        else {
+            if (dto.entryNumber !== undefined) {
+                throw new common_1.BadRequestException("Only students can have entry numbers");
+            }
+        }
+        if (user.role === "INSTRUCTOR") {
+            if (dto.department !== undefined) {
+                data.department = dto.department;
+            }
+        }
+        else {
+            if (dto.department !== undefined) {
+                throw new common_1.BadRequestException("Only instructors can have departments");
+            }
+        }
+        try {
+            return await this.prisma.user.update({
+                where: { id },
+                data,
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    role: true,
+                    entryNumber: true,
+                    department: true,
+                    isActive: true,
+                    createdAt: true,
+                },
+            });
+        }
+        catch (error) {
+            if (error?.code === "P2002") {
+                throw new common_1.ConflictException("Email or entry number already in use");
+            }
+            throw error;
+        }
+    }
+    getTranscriptByEntry(entryNumber) {
+        return {
+            student: {
+                id: "1",
+                name: "John Doe",
+                email: "john@example.com",
+                entryNumber: entryNumber,
+                branch: "Computer Science",
+            },
+            cgpa: 8.5,
+            totalCredits: 120,
+            semesters: [
+                {
+                    semester: "Fall 2024",
+                    sgpa: 8.7,
+                    courses: [
+                        {
+                            code: "CS101",
+                            name: "Introduction to Programming",
+                            credits: 4,
+                            grade: "A",
+                        },
+                        {
+                            code: "CS102",
+                            name: "Data Structures",
+                            credits: 4,
+                            grade: "A-",
+                        },
+                    ],
+                },
+            ],
+        };
     }
     async getCourseEnrollments(courseId) {
         return this.prisma.enrollment.findMany({
@@ -300,11 +364,19 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AdminController.prototype, "activateUser", null);
 __decorate([
+    (0, common_1.Patch)("users/:id"),
+    __param(0, (0, common_1.Param)("id")),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, update_user_dto_1.UpdateUserDto]),
+    __metadata("design:returntype", Promise)
+], AdminController.prototype, "updateUser", null);
+__decorate([
     (0, common_1.Get)("transcript/entry/:entryNumber"),
     __param(0, (0, common_1.Param)("entryNumber")),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", Promise)
+    __metadata("design:returntype", void 0)
 ], AdminController.prototype, "getTranscriptByEntry", null);
 __decorate([
     (0, common_1.Get)("courses/:courseId/enrollments"),

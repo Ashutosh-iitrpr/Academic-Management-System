@@ -7,11 +7,14 @@ import {
   Post,
   UseGuards,
   NotFoundException,
+  BadRequestException,
+  ConflictException,
 } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
+import { UpdateUserDto } from "./dto/update-user.dto";
 
 @Controller("admin")
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -128,6 +131,7 @@ export class AdminController {
         email: true,
         role: true,
         entryNumber: true,
+        department: true,
         isActive: true,
         createdAt: true,
       },
@@ -203,37 +207,107 @@ export class AdminController {
     });
   }
 
-  // 📝 Get Transcript by Entry Number
-  @Get("transcript/entry/:entryNumber")
-  async getTranscriptByEntry(@Param("entryNumber") entryNumber: string) {
-    const student = await this.prisma.user.findFirst({
-      where: {
-        entryNumber: entryNumber,
-        role: 'STUDENT',
-      },
-      include: {
-        enrollments: {
-          include: {
-            courseOffering: {
-              include: {
-                course: true,
-                instructor: {
-                  select: {
-                    name: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
+  // ✏️ Update User (edit name, email, entry number, department)
+  @Patch("users/:id")
+  async updateUser(@Param("id") id: string, @Body() dto: UpdateUserDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
     });
 
-    if (!student) {
-      throw new NotFoundException('Student not found with this entry number');
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
     }
 
-    return student;
+    const data: Record<string, any> = {};
+
+    if (dto.name !== undefined) {
+      data.name = dto.name;
+    }
+
+    if (dto.email !== undefined) {
+      data.email = dto.email;
+    }
+
+    // Handle entry number - only for students
+    if (user.role === "STUDENT") {
+      if (dto.entryNumber !== undefined) {
+        data.entryNumber = dto.entryNumber;
+      }
+    } else {
+      if (dto.entryNumber !== undefined) {
+        throw new BadRequestException("Only students can have entry numbers");
+      }
+    }
+
+    // Handle department - only for instructors
+    if (user.role === "INSTRUCTOR") {
+      if (dto.department !== undefined) {
+        data.department = dto.department;
+      }
+    } else {
+      if (dto.department !== undefined) {
+        throw new BadRequestException("Only instructors can have departments");
+      }
+    }
+
+    try {
+      return await this.prisma.user.update({
+        where: { id },
+        data,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          entryNumber: true,
+          department: true,
+          isActive: true,
+          createdAt: true,
+        },
+      });
+    } catch (error: any) {
+      if (error?.code === "P2002") {
+        throw new ConflictException("Email or entry number already in use");
+      }
+      throw error;
+    }
+  }
+
+  // 📝 Get Transcript by Entry Number (MOCK DATA)
+  @Get("transcript/entry/:entryNumber")
+  getTranscriptByEntry(@Param("entryNumber") entryNumber: string) {
+    // TODO: Implement actual transcript lookup by entry number
+    return {
+      student: {
+        id: "1",
+        name: "John Doe",
+        email: "john@example.com",
+        entryNumber: entryNumber,
+        branch: "Computer Science",
+      },
+      cgpa: 8.5,
+      totalCredits: 120,
+      semesters: [
+        {
+          semester: "Fall 2024",
+          sgpa: 8.7,
+          courses: [
+            {
+              code: "CS101",
+              name: "Introduction to Programming",
+              credits: 4,
+              grade: "A",
+            },
+            {
+              code: "CS102",
+              name: "Data Structures",
+              credits: 4,
+              grade: "A-",
+            },
+          ],
+        },
+      ],
+    };
   }
 
   // 📚 Get Course Enrollments
