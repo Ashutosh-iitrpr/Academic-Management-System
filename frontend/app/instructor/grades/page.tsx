@@ -11,6 +11,8 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  OutlinedInput,
+  InputAdornment,
   Alert,
   Table,
   TableBody,
@@ -42,6 +44,9 @@ import InfoIcon from '@mui/icons-material/Info';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import EditIcon from '@mui/icons-material/Edit';
 import ClearIcon from '@mui/icons-material/Clear';
+import SearchIcon from '@mui/icons-material/Search';
+import FilterAltIcon from '@mui/icons-material/FilterAlt';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
 
 const GRADES = [
   { value: 'A', label: 'A', color: '#4caf50' },
@@ -63,7 +68,26 @@ interface GradeEntry {
   entryNumber: string;
   grade: string | null;
   isNew: boolean;
+  branch?: string;
+  batch?: string;
 }
+
+const deriveBatchFromEntry = (entry: string | null | undefined): string | undefined => {
+  if (!entry) return undefined;
+  const year = entry.slice(0, 4);
+  return /^\d{4}$/.test(year) ? year : undefined;
+};
+
+const gradeValuesSet = new Set(GRADES.map((g) => g.value));
+
+const normalizeGradeInput = (grade: string): string | null => {
+  if (!grade) return null;
+  const raw = grade.trim().toUpperCase();
+  if (gradeValuesSet.has(raw)) return raw;
+  const withMinus = raw.replace('-', '_MINUS');
+  if (gradeValuesSet.has(withMinus)) return withMinus;
+  return null;
+};
 
 const GradeUpload = () => {
   const [loading, setLoading] = useState(true);
@@ -73,11 +97,18 @@ const GradeUpload = () => {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [loadingEnrollments, setLoadingEnrollments] = useState(false);
   const [grades, setGrades] = useState<GradeEntry[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [branchFilter, setBranchFilter] = useState<string>('ALL');
+  const [batchFilter, setBatchFilter] = useState<string>('ALL');
   const [editingCell, setEditingCell] = useState<string | null>(null);
   const [confirmDialog, setConfirmDialog] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [resultDialog, setResultDialog] = useState(false);
   const [result, setResult] = useState<{ updatedCount: number; updatedEnrollments: string[] } | null>(null);
+  const [csvMessage, setCsvMessage] = useState<string | null>(null);
+  const [csvError, setCsvError] = useState<string | null>(null);
+  const [csvDialogOpen, setCsvDialogOpen] = useState(false);
+  const [showSubmitCount, setShowSubmitCount] = useState(true);
 
   useEffect(() => {
     fetchOfferings();
@@ -102,6 +133,7 @@ const GradeUpload = () => {
       setSelectedOffering(offeringId);
       setLoadingEnrollments(true);
       setGrades([]);
+      setShowSubmitCount(true);
 
       const offering = offerings.find(o => o.id === offeringId);
       setSelectedOfferingData(offering || null);
@@ -123,6 +155,11 @@ const GradeUpload = () => {
         entryNumber: enrollment.student.entryNumber || 'N/A',
         grade: enrollment.grade || null,
         isNew: !enrollment.grade,
+        branch: (enrollment.student as any)?.branch || (enrollment.student as any)?.branchCode,
+        batch:
+          (enrollment.student as any)?.batch ||
+          (enrollment.student as any)?.batchYear?.toString() ||
+          deriveBatchFromEntry(enrollment.student.entryNumber),
       }));
 
       setGrades(gradeEntries);
@@ -135,6 +172,7 @@ const GradeUpload = () => {
   };
 
   const handleGradeChange = (enrollmentId: string, grade: string) => {
+    setShowSubmitCount(true);
     setGrades(prev =>
       prev.map(g =>
         g.enrollmentId === enrollmentId
@@ -146,6 +184,7 @@ const GradeUpload = () => {
   };
 
   const handleClearGrade = (enrollmentId: string) => {
+    setShowSubmitCount(true);
     setGrades(prev =>
       prev.map(g =>
         g.enrollmentId === enrollmentId
@@ -153,6 +192,51 @@ const GradeUpload = () => {
           : g
       )
     );
+  };
+
+  const openCsvDialog = () => {
+    setCsvMessage(null);
+    setCsvError(null);
+    setCsvDialogOpen(true);
+  };
+
+  const closeCsvDialog = () => setCsvDialogOpen(false);
+
+  const handleCsvInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    handleCsvFile(file);
+    // allow re-uploading same file
+    e.target.value = '';
+  };
+
+  const escapeCsv = (value: string): string => {
+    if (value == null) return '';
+    const needsQuotes = /[",\n]/.test(value);
+    const escaped = value.replace(/"/g, '""');
+    return needsQuotes ? `"${escaped}"` : escaped;
+  };
+
+  const handleDownloadCsv = () => {
+    if (!grades.length) {
+      toast.error('No students to download');
+      return;
+    }
+    const sorted = [...grades].sort((a, b) => a.entryNumber.localeCompare(b.entryNumber));
+    const header = 'name,entrynumber,grade';
+    const rows = sorted.map((g) =>
+      [escapeCsv(g.studentName), escapeCsv(g.entryNumber), escapeCsv(g.grade || '')].join(',')
+    );
+    const csv = [header, ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const fileName = `grades-${selectedOfferingData?.course?.code || 'course'}-${selectedOffering || 'list'}.csv`;
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const handleSubmit = () => {
@@ -180,6 +264,8 @@ const GradeUpload = () => {
       setResult(response);
       setResultDialog(true);
       toast.success(`Successfully uploaded grades for ${response.updatedCount} students!`);
+      setShowSubmitCount(false);
+      setGrades(prev => prev.map(g => ({ ...g, isNew: false })));
     } catch (error: any) {
       console.error('Failed to upload grades:', error);
       toast.error(error.response?.data?.message || 'Failed to upload grades');
@@ -204,6 +290,97 @@ const GradeUpload = () => {
     assigned: gradesAssigned,
     pending: gradesNotAssigned,
     total: grades.length,
+  };
+
+  const branchOptions = Array.from(
+    new Set(grades.map((g) => g.branch).filter(Boolean) as string[])
+  );
+  const batchOptions = Array.from(
+    new Set(grades.map((g) => g.batch).filter(Boolean) as string[])
+  );
+
+  const filteredGrades = grades.filter((g) => {
+    const matchesSearch = searchQuery
+      ? g.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        g.entryNumber.toLowerCase().includes(searchQuery.toLowerCase())
+      : true;
+    const matchesBranch = branchFilter === 'ALL' ? true : g.branch === branchFilter;
+    const matchesBatch = batchFilter === 'ALL' ? true : g.batch === batchFilter;
+    return matchesSearch && matchesBranch && matchesBatch;
+  });
+
+  const handleCsvFile = (file: File | null) => {
+    if (!file) return;
+    setCsvError(null);
+    setCsvMessage(null);
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = reader.result as string;
+      if (!text) {
+        setCsvError('Empty file.');
+        return;
+      }
+
+      const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
+      if (lines.length === 0) {
+        setCsvError('No rows found in CSV.');
+        return;
+      }
+
+      const rows = lines.map((line) => line.split(',').map((p) => p.trim()));
+      // Skip header if present
+      const startIndex =
+        rows[0][0]?.toLowerCase() === 'name' || rows[0][1]?.toLowerCase() === 'entrynumber'
+          ? 1
+          : 0;
+
+      let applied = 0;
+      let invalid = 0;
+      let unmatched = 0;
+
+      const updates = rows.slice(startIndex).map((parts) => ({
+        name: parts[0] || '',
+        entryNumber: (parts[1] || '').toUpperCase(),
+        grade: normalizeGradeInput(parts[2] || ''),
+      }));
+
+      const updatesMap = new Map<string, string>();
+      updates.forEach((u) => {
+        if (!u.entryNumber || !u.grade) {
+          invalid += 1;
+          return;
+        }
+        updatesMap.set(u.entryNumber, u.grade);
+      });
+
+      setGrades((prev) => {
+        const updated = prev.map((g) => {
+          const key = g.entryNumber.toUpperCase();
+          const newGrade = updatesMap.get(key);
+          if (newGrade) {
+            applied += 1;
+            return { ...g, grade: newGrade, isNew: false };
+          }
+          return g;
+        });
+
+        unmatched = updatesMap.size - applied;
+        return updated;
+      });
+
+      if (applied > 0) {
+        setShowSubmitCount(true);
+        setCsvMessage(`Applied ${applied} grade updates${unmatched > 0 ? `; ${unmatched} entries did not match students` : ''}${invalid > 0 ? `; ${invalid} invalid rows` : ''}.`);
+      } else if (invalid > 0 || unmatched > 0) {
+        setCsvError(`No grades applied. ${unmatched} unmatched, ${invalid} invalid rows.`);
+      } else {
+        setCsvError('No matching students found in the CSV.');
+      }
+    };
+
+    reader.onerror = () => setCsvError('Failed to read the file.');
+    reader.readAsText(file);
   };
 
   const getGradeColor = (grade: string | null) => {
@@ -388,6 +565,90 @@ const GradeUpload = () => {
                           </Box>
                         </Box>
 
+                        {/* Filters */}
+                        <Box sx={{ display: 'flex', flexWrap: { xs: 'wrap', md: 'nowrap' }, gap: 2, mb: 2, alignItems: 'center' }}>
+                          <TextField
+                            size="small"
+                            label="Search by name or entry"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            sx={{ minWidth: 220 }}
+                            InputProps={{
+                              startAdornment: (
+                                <SearchIcon sx={{ color: '#999', mr: 1 }} fontSize="small" />
+                              ),
+                            }}
+                          />
+                          <FormControl size="small" sx={{ minWidth: 150 }}>
+                            <InputLabel>Branch</InputLabel>
+                            <Select
+                              value={branchFilter}
+                              label="Branch"
+                              onChange={(e) => setBranchFilter(e.target.value)}
+                              input={
+                                <OutlinedInput
+                                  label="Branch"
+                                  startAdornment={
+                                    <InputAdornment position="start">
+                                      <FilterAltIcon fontSize="small" sx={{ color: '#999' }} />
+                                    </InputAdornment>
+                                  }
+                                />
+                              }
+                            >
+                              <MenuItem value="ALL">All Branches</MenuItem>
+                              {branchOptions.map((b) => (
+                                <MenuItem key={b} value={b}>
+                                  {b}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                          <FormControl size="small" sx={{ minWidth: 150 }}>
+                            <InputLabel>Batch</InputLabel>
+                            <Select
+                              value={batchFilter}
+                              label="Batch"
+                              onChange={(e) => setBatchFilter(e.target.value)}
+                              input={
+                                <OutlinedInput
+                                  label="Batch"
+                                  startAdornment={
+                                    <InputAdornment position="start">
+                                      <FilterAltIcon fontSize="small" sx={{ color: '#999' }} />
+                                    </InputAdornment>
+                                  }
+                                />
+                              }
+                            >
+                              <MenuItem value="ALL">All Batches</MenuItem>
+                              {batchOptions.map((b) => (
+                                <MenuItem key={b} value={b}>
+                                  {b}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<UploadFileIcon fontSize="small" />}
+                            onClick={openCsvDialog}
+                            sx={{ textTransform: 'none', px: 1.25, minWidth: 110 }}
+                          >
+                            CSV Upload
+                          </Button>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<GetAppIcon fontSize="small" />}
+                            onClick={handleDownloadCsv}
+                            sx={{ textTransform: 'none', px: 1.25, minWidth: 120 }}
+                          >
+                            Download CSV
+                          </Button>
+                        </Box>
+
                         {/* Grades Table */}
                         <Box sx={{ overflowX: 'auto', mb: 3 }}>
                           <Table>
@@ -400,7 +661,7 @@ const GradeUpload = () => {
                               </TableRow>
                             </TableHead>
                             <TableBody>
-                              {grades.map((gradeEntry) => (
+                              {filteredGrades.map((gradeEntry) => (
                                 <TableRow
                                   key={gradeEntry.enrollmentId}
                                   sx={{
@@ -496,6 +757,7 @@ const GradeUpload = () => {
                             onClick={() => {
                               setSelectedOffering('');
                               setGrades([]);
+                              setShowSubmitCount(true);
                             }}
                             sx={{ textTransform: 'none' }}
                           >
@@ -512,7 +774,7 @@ const GradeUpload = () => {
                               textTransform: 'none',
                             }}
                           >
-                            Submit Grades ({gradesAssigned})
+                            {showSubmitCount && gradesAssigned > 0 ? `Submit Grades (${gradesAssigned})` : 'Submit Grades'}
                           </Button>
                         </Box>
                       </>
@@ -523,6 +785,35 @@ const GradeUpload = () => {
             </Card>
           )}
         </Box>
+
+        {/* CSV Upload Dialog */}
+        <Dialog open={csvDialogOpen} onClose={closeCsvDialog} maxWidth="sm" fullWidth>
+          <DialogTitle sx={{ fontWeight: 700 }}>Upload Grades via CSV</DialogTitle>
+          <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Alert severity="info">
+              CSV format: <strong>name, entrynumber, grade</strong> (header optional). Grades supported: A, A-, B, B-, C, C-, D, E, F.
+            </Alert>
+            <Typography variant="body2" sx={{ color: '#666' }}>
+              Entry numbers must match the students in this offering. Unsupported grades or missing fields are skipped. After uploading, review the applied grades and click “Submit Grades” to save.
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+              <Button
+                variant="contained"
+                component="label"
+                startIcon={<UploadFileIcon />}
+                sx={{ textTransform: 'none', backgroundColor: '#8B3A3A', '&:hover': { backgroundColor: '#6d2d2d' } }}
+              >
+                Choose CSV
+                <input type="file" accept=".csv" hidden onChange={handleCsvInputChange} />
+              </Button>
+              {csvMessage && <Chip label={csvMessage} color="success" variant="outlined" size="small" />}
+              {csvError && <Chip label={csvError} color="error" variant="outlined" size="small" />}
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={closeCsvDialog} sx={{ color: '#666' }}>Close</Button>
+          </DialogActions>
+        </Dialog>
 
         {/* Confirmation Dialog */}
         <Dialog
