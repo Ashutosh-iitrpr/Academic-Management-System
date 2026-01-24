@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Grid, Box, Card, CardContent, Typography, Button, Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import ProtectedRoute from '@/lib/routes/ProtectedRoute';
@@ -17,9 +18,11 @@ import PeopleIcon from '@mui/icons-material/People';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import ChatIcon from '@mui/icons-material/Chat';
 import AddIcon from '@mui/icons-material/Add';
+import BookIcon from '@mui/icons-material/Book';
 
 const InstructorDashboard = () => {
   const { user } = useAuth();
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [offerings, setOfferings] = useState<ApiCourseOffering[]>([]);
   const [pendingEnrollments, setPendingEnrollments] = useState<Enrollment[]>([]);
@@ -289,6 +292,78 @@ const InstructorDashboard = () => {
               </CardContent>
             </Card>
           )}
+
+          {/* Quick Links */}
+          <Grid container spacing={2} sx={{ mt: 2 }}>
+            <Grid item xs={12} sm={6} md={3}>
+              <Box onClick={() => router.push('/courses')} sx={{ textDecoration: 'none' }}>
+                <Card 
+                  sx={{ border: '2px dashed #8B3A3A', backgroundColor: '#fafafa', cursor: 'pointer', '&:hover': { backgroundColor: '#f0f0f0' }, height: '100%' }}
+                >
+                  <CardContent sx={{ textAlign: 'center' }}>
+                    <BookIcon sx={{ fontSize: 40, color: '#8B3A3A', mb: 1 }} />
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                      Course Catalog
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#666' }}>
+                      Browse and request courses
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Box>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Box onClick={() => router.push('/instructor/all-offerings')} sx={{ textDecoration: 'none' }}>
+                <Card 
+                  sx={{ border: '2px dashed #D4A574', backgroundColor: '#fafafa', cursor: 'pointer', '&:hover': { backgroundColor: '#f0f0f0' }, height: '100%' }}
+                >
+                  <CardContent sx={{ textAlign: 'center' }}>
+                    <SchoolIcon sx={{ fontSize: 40, color: '#D4A574', mb: 1 }} />
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                      All Offerings
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#666' }}>
+                      View all course offerings
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Box>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Box onClick={() => router.push('/instructor/grades')} sx={{ textDecoration: 'none' }}>
+                <Card 
+                  sx={{ border: '2px dashed #8B3A3A', backgroundColor: '#fafafa', cursor: 'pointer', '&:hover': { backgroundColor: '#f0f0f0' }, height: '100%' }}
+                >
+                  <CardContent sx={{ textAlign: 'center' }}>
+                    <AssignmentIcon sx={{ fontSize: 40, color: '#8B3A3A', mb: 1 }} />
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                      Manage Grades
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#666' }}>
+                      Submit grades for students
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Box>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Box onClick={() => router.push('/instructor/feedback')} sx={{ textDecoration: 'none' }}>
+                <Card 
+                  sx={{ border: '2px dashed #D4A574', backgroundColor: '#fafafa', cursor: 'pointer', '&:hover': { backgroundColor: '#f0f0f0' }, height: '100%' }}
+                >
+                  <CardContent sx={{ textAlign: 'center' }}>
+                    <ChatIcon sx={{ fontSize: 40, color: '#D4A574', mb: 1 }} />
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                      Course Feedback
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#666' }}>
+                      View student feedback
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Box>
+            </Grid>
+          </Grid>
         </Box>
       </DashboardLayout>
     </ProtectedRoute>

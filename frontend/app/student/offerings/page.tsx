@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
+import { useAuth } from '@/lib/auth/AuthContext';
 import {
   Box,
   Card,
@@ -46,6 +47,7 @@ interface CourseOfferingDisplay {
   branches: string[];
   enrolled: boolean;
   enrollmentId?: string;
+  canEnroll: boolean;
 }
 
 interface EnrollmentRecord {
@@ -61,6 +63,7 @@ interface EnrollmentRecord {
 }
 
 const StudentOfferingsPage = () => {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [offerings, setOfferings] = useState<CourseOfferingDisplay[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -105,6 +108,10 @@ const StudentOfferingsPage = () => {
             offeringStatus = 'FLOATED';
           }
 
+          const isEnrolled = enrolledCourses.has(offering.course.code);
+          const isBranchAllowed = offering.allowedBranches.includes(user?.branch || '');
+          const canEnroll = !isEnrolled && isBranchAllowed;
+
           return {
             id: offering.id,
             courseCode: offering.course.code,
@@ -115,8 +122,9 @@ const StudentOfferingsPage = () => {
             semester: offering.semester || 'Current',
             status: offeringStatus,
             branches: offering.allowedBranches,
-            enrolled: enrolledCourses.has(offering.course.code),
+            enrolled: isEnrolled,
             enrollmentId: enrollmentMap[offering.course.code],
+            canEnroll: canEnroll,
           };
         });
 
@@ -180,6 +188,10 @@ const StudentOfferingsPage = () => {
           offeringStatus = 'FLOATED';
         }
 
+        const isEnrolled = enrolledCourses.has(offering.course.code);
+        const isBranchAllowed = offering.allowedBranches.includes(user?.branch || '');
+        const canEnroll = !isEnrolled && isBranchAllowed;
+
         return {
           id: offering.id,
           courseCode: offering.course.code,
@@ -190,7 +202,8 @@ const StudentOfferingsPage = () => {
           semester: offering.semester || 'Current',
           status: offeringStatus,
           branches: offering.allowedBranches,
-          enrolled: enrolledCourses.has(offering.course.code),
+          enrolled: isEnrolled,
+          canEnroll: canEnroll,
         };
       });
 
@@ -404,17 +417,22 @@ const StudentOfferingsPage = () => {
                             size="small"
                             variant="contained"
                             startIcon={<AddIcon />}
-                            disabled={offering.enrolled || enrollmentInProgress}
+                            disabled={!offering.canEnroll || enrollmentInProgress}
                             onClick={() => handleEnroll(offering.id)}
                             sx={{
-                              backgroundColor: offering.enrolled ? '#ccc' : '#4caf50',
+                              backgroundColor: offering.canEnroll ? '#4caf50' : '#cccccc',
+                              color: offering.canEnroll ? 'white' : '#999999',
                               '&:hover': {
-                                backgroundColor: offering.enrolled ? '#ccc' : '#388e3c',
+                                backgroundColor: offering.canEnroll ? '#388e3c' : '#cccccc',
+                                cursor: offering.canEnroll ? 'pointer' : 'not-allowed',
                               },
                             }}
+                            title={!offering.canEnroll ? (offering.enrolled ? 'Already enrolled' : 'Not available for your branch') : 'Enroll in this course'}
                           >
                             {enrollmentInProgress && offering.id ? (
                               <CircularProgress size={16} sx={{ mr: 1 }} />
+                            ) : offering.enrolled ? (
+                              'Already Enrolled'
                             ) : (
                               'Enroll'
                             )}

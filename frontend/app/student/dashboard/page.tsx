@@ -49,6 +49,7 @@ interface DisplayCourseOffering {
   timeSlot: string;
   branches: string[];
   enrolled: boolean;
+  canEnroll: boolean;
 }
 
 interface AcademicStats {
@@ -101,16 +102,23 @@ const StudentDashboard = () => {
 
         // Fetch available offerings
         const offerings = await studentApi.getAvailableOfferings();
-        const displayOfferings: DisplayCourseOffering[] = offerings.map((o) => ({
-          id: o.id,
-          courseCode: o.course.code,
-          courseName: o.course.name,
-          credits: o.course.credits,
-          instructor: o.instructor.name,
-          timeSlot: o.timeSlot,
-          branches: o.allowedBranches,
-          enrolled: displayEnrollments.some((e) => e.courseCode === o.course.code),
-        }));
+        const displayOfferings: DisplayCourseOffering[] = offerings.map((o) => {
+          const isEnrolled = displayEnrollments.some((e) => e.courseCode === o.course.code);
+          const isBranchAllowed = o.allowedBranches.includes(user?.branch || '');
+          const canEnroll = !isEnrolled && isBranchAllowed;
+          
+          return {
+            id: o.id,
+            courseCode: o.course.code,
+            courseName: o.course.name,
+            credits: o.course.credits,
+            instructor: o.instructor.name,
+            timeSlot: o.timeSlot,
+            branches: o.allowedBranches,
+            enrolled: isEnrolled,
+            canEnroll: canEnroll,
+          };
+        });
         setAvailableOfferings(displayOfferings);
 
         // Calculate stats from the response summary
@@ -337,14 +345,20 @@ const StudentDashboard = () => {
                         <Button
                           variant="contained"
                           startIcon={<AddIcon />}
+                          disabled={!offering.canEnroll}
                           sx={{
-                            backgroundColor: '#4caf50',
-                            '&:hover': { backgroundColor: '#388e3c' },
+                            backgroundColor: offering.canEnroll ? '#4caf50' : '#cccccc',
+                            color: offering.canEnroll ? 'white' : '#999999',
+                            '&:hover': { 
+                              backgroundColor: offering.canEnroll ? '#388e3c' : '#cccccc',
+                              cursor: offering.canEnroll ? 'pointer' : 'not-allowed',
+                            },
                             ml: 2,
                           }}
                           onClick={() => handleEnrollCourse(offering.id)}
+                          title={!offering.canEnroll ? (offering.enrolled ? 'Already enrolled' : 'Not available for your branch') : 'Enroll in this course'}
                         >
-                          Enroll
+                          {offering.enrolled ? 'Already Enrolled' : 'Enroll'}
                         </Button>
                       </Box>
                     </Box>

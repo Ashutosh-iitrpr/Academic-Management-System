@@ -171,8 +171,8 @@ export declare class AdminController {
         approvedAt: Date | null;
         completedAt: Date | null;
         courseOfferingId: string;
-        studentId: string;
         enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
+        studentId: string;
         grade: import("@prisma/client").$Enums.Grade | null;
         source: import("@prisma/client").$Enums.EnrollmentSource;
     })[]>;

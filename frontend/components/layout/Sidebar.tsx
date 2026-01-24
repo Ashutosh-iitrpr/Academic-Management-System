@@ -106,6 +106,12 @@ const navigationItems: NavigationItem[] = [
     roles: ['INSTRUCTOR'],
   },
   {
+    label: 'Course Catalog',
+    path: '/courses',
+    icon: <SchoolIcon />,
+    roles: ['INSTRUCTOR'],
+  },
+  {
     label: 'All Offerings',
     path: '/instructor/all-offerings',
     icon: <SchoolIcon />,
