@@ -9,6 +9,7 @@ export declare class CoursesController {
         createdAt: Date;
         code: string;
         credits: number;
+        ltpsc: string | null;
         description: string | null;
     }>;
     getCourses(): Promise<{
@@ -17,6 +18,7 @@ export declare class CoursesController {
         createdAt: Date;
         code: string;
         credits: number;
+        ltpsc: string | null;
         description: string | null;
     }[]>;
 }

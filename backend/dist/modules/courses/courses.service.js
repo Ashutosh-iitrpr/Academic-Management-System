@@ -24,6 +24,7 @@ let CoursesService = class CoursesService {
                     code: dto.code,
                     name: dto.name,
                     credits: dto.credits,
+                    ltpsc: dto.ltpsc,
                 },
             });
         }

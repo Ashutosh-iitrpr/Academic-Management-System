@@ -15,6 +15,7 @@ class CreateCourseDto {
     code;
     name;
     credits;
+    ltpsc;
 }
 exports.CreateCourseDto = CreateCourseDto;
 __decorate([
@@ -34,4 +35,12 @@ __decorate([
     (0, class_validator_1.Min)(1),
     __metadata("design:type", Number)
 ], CreateCourseDto.prototype, "credits", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.Matches)(/^\d+-\d+-\d+-\d+$/, {
+        message: "LTPSC must be in format like 3-0-0-3 (Lecture-Tutorial-Practical-Self Study)",
+    }),
+    __metadata("design:type", String)
+], CreateCourseDto.prototype, "ltpsc", void 0);
 //# sourceMappingURL=create-course.dto.js.map

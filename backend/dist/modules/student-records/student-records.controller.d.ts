@@ -44,6 +44,9 @@ export declare class StudentRecordsController {
             cumulativeCreditsCompleted: number;
             creditsOngoing: number;
             totalEnrollments: number;
+            mainGPA: number;
+            concentrationGPA: number;
+            minorGPA: number;
             cgpa: number;
             currentSemesterGPA: number;
         };
@@ -101,36 +104,96 @@ export declare class StudentRecordsController {
         semesters: {
             semester: any;
             courses: any;
-            semesterCreditsEarned: any;
-            semesterGPA: string;
+            main: {
+                semesterCreditsEarned: any;
+                semesterGPA: string;
+            };
+            concentration: {
+                semesterCreditsEarned: any;
+                semesterGPA: string;
+            };
+            minor: {
+                semesterCreditsEarned: any;
+                semesterGPA: string;
+            };
         }[];
         cumulative: {
-            totalCreditsEarned: number;
-            CGPA: string;
+            main: {
+                totalCreditsEarned: number;
+                CGPA: string;
+            };
+            concentration: {
+                totalCreditsEarned: number;
+                CGPA: string;
+            };
+            minor: {
+                totalCreditsEarned: number;
+                CGPA: string;
+            };
         };
     }>;
     getStudentTranscriptForAdmin(studentId: string): Promise<{
         semesters: {
             semester: any;
             courses: any;
-            semesterCreditsEarned: any;
-            semesterGPA: string;
+            main: {
+                semesterCreditsEarned: any;
+                semesterGPA: string;
+            };
+            concentration: {
+                semesterCreditsEarned: any;
+                semesterGPA: string;
+            };
+            minor: {
+                semesterCreditsEarned: any;
+                semesterGPA: string;
+            };
         }[];
         cumulative: {
-            totalCreditsEarned: number;
-            CGPA: string;
+            main: {
+                totalCreditsEarned: number;
+                CGPA: string;
+            };
+            concentration: {
+                totalCreditsEarned: number;
+                CGPA: string;
+            };
+            minor: {
+                totalCreditsEarned: number;
+                CGPA: string;
+            };
         };
     }>;
     getStudentTranscriptForInstructor(studentId: string): Promise<{
         semesters: {
             semester: any;
             courses: any;
-            semesterCreditsEarned: any;
-            semesterGPA: string;
+            main: {
+                semesterCreditsEarned: any;
+                semesterGPA: string;
+            };
+            concentration: {
+                semesterCreditsEarned: any;
+                semesterGPA: string;
+            };
+            minor: {
+                semesterCreditsEarned: any;
+                semesterGPA: string;
+            };
         }[];
         cumulative: {
-            totalCreditsEarned: number;
-            CGPA: string;
+            main: {
+                totalCreditsEarned: number;
+                CGPA: string;
+            };
+            concentration: {
+                totalCreditsEarned: number;
+                CGPA: string;
+            };
+            minor: {
+                totalCreditsEarned: number;
+                CGPA: string;
+            };
         };
     }>;
 }

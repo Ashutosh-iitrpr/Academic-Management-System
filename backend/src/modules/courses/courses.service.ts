@@ -13,6 +13,7 @@ export class CoursesService {
           code: dto.code,
           name: dto.name,
           credits: dto.credits,
+          ltpsc: dto.ltpsc,
         },
       });
     } catch (error) {

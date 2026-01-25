@@ -42,6 +42,7 @@ interface Course {
   code: string;
   name: string;
   credits: number;
+  ltpsc?: string;
   description?: string;
   offerings: Array<{
     id: string;
@@ -55,6 +56,7 @@ interface CreateCourseForm {
   name: string;
   code: string;
   credits: number;
+  ltpsc: string;
   description?: string;
 }
 
@@ -73,6 +75,7 @@ const CoursesPage = () => {
     name: '',
     code: '',
     credits: 3,
+    ltpsc: '',
   });
 
   const axiosClient = getAxiosClient();
@@ -116,6 +119,7 @@ const CoursesPage = () => {
       name: '',
       code: '',
       credits: 3,
+      ltpsc: '',
     });
     setError('');
     setSuccess('');
@@ -124,7 +128,7 @@ const CoursesPage = () => {
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
-    setFormData({ name: '', code: '', credits: 3 });
+    setFormData({ name: '', code: '', credits: 3, ltpsc: '' });
     setError('');
     setSuccess('');
     setEditingCourseId(null);
@@ -150,6 +154,14 @@ const CoursesPage = () => {
       setError('Credits must be greater than 0');
       return false;
     }
+    if (!formData.ltpsc.trim()) {
+      setError('LTPSC is required (e.g., 3-0-0-3)');
+      return false;
+    }
+    if (!/^\d+-\d+-\d+-\d+$/.test(formData.ltpsc)) {
+      setError('LTPSC format must be like 3-0-0-3 (Lecture-Tutorial-Practical-Self Study)');
+      return false;
+    }
     return true;
   };
 
@@ -164,6 +176,7 @@ const CoursesPage = () => {
         name: formData.name,
         code: formData.code,
         credits: formData.credits,
+        ltpsc: formData.ltpsc,
         description: formData.description || '',
       };
 
@@ -187,6 +200,7 @@ const CoursesPage = () => {
       name: course.name,
       code: course.code,
       credits: course.credits,
+      ltpsc: course.ltpsc || '',
       description: course.description || '',
     });
     setError('');
@@ -205,6 +219,7 @@ const CoursesPage = () => {
         name: formData.name,
         code: formData.code,
         credits: formData.credits,
+        ltpsc: formData.ltpsc,
         description: formData.description || '',
       };
 
@@ -301,6 +316,7 @@ const CoursesPage = () => {
                       <TableCell sx={{ fontWeight: 700 }}>Code</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Name</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Credits</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>LTPSC</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Actions</TableCell>
                     </TableRow>
                   </TableHead>
@@ -321,6 +337,11 @@ const CoursesPage = () => {
                             size="small"
                             variant="outlined"
                           />
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                            {course.ltpsc || '-'}
+                          </Typography>
                         </TableCell>
                         <TableCell>
                           <Tooltip title="Edit Course">
@@ -393,6 +414,15 @@ const CoursesPage = () => {
                 onChange={(e) => handleInputChange('credits', parseInt(e.target.value) || 0)}
                 disabled={creatingCourse}
                 inputProps={{ min: 1 }}
+              />
+              <TextField
+                fullWidth
+                label="LTPSC"
+                placeholder="e.g., 3-0-0-3"
+                value={formData.ltpsc}
+                onChange={(e) => handleInputChange('ltpsc', e.target.value)}
+                disabled={creatingCourse}
+                helperText="Format: Lecture-Tutorial-Practical-Self Study (e.g., 3-0-0-3)"
               />
               <TextField
                 fullWidth

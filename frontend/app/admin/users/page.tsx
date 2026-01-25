@@ -44,6 +44,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
+import DownloadIcon from '@mui/icons-material/Download';
 
 interface User {
   id: string;
@@ -146,6 +147,50 @@ const UsersPage = () => {
     } catch (error: any) {
       const errorMsg = error?.response?.data?.message || 'Failed to activate user';
       console.error('Error activating user:', error);
+      setError(errorMsg);
+    }
+  };
+
+  const handleDownloadStudents = async () => {
+    try {
+      setError('');
+      const response = await axiosClient.get('/admin/users/download/students', {
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `students_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      setSuccess('Students data downloaded successfully');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error: any) {
+      const errorMsg = error?.response?.data?.message || 'Failed to download students data';
+      console.error('Error downloading students:', error);
+      setError(errorMsg);
+    }
+  };
+
+  const handleDownloadInstructors = async () => {
+    try {
+      setError('');
+      const response = await axiosClient.get('/admin/users/download/instructors', {
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `instructors_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      setSuccess('Instructors data downloaded successfully');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error: any) {
+      const errorMsg = error?.response?.data?.message || 'Failed to download instructors data';
+      console.error('Error downloading instructors:', error);
       setError(errorMsg);
     }
   };
@@ -539,9 +584,20 @@ const UsersPage = () => {
           </Box>
           <Card sx={{ mb: 3 }}>
             <CardContent sx={{ p: 0, overflow: 'auto' }}>
-              <Box sx={{ p: 2, borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography variant="h6" sx={{ fontWeight: 700 }}>Students</Typography>
-                <Chip label={`${sortedStudents.length}`} size="small" />
+              <Box sx={{ p: 2, borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 700 }}>Students</Typography>
+                  <Chip label={`${sortedStudents.length}`} size="small" />
+                </Box>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<DownloadIcon />}
+                  sx={{ borderColor: '#8B3A3A', color: '#8B3A3A' }}
+                  onClick={handleDownloadStudents}
+                >
+                  Download
+                </Button>
               </Box>
               {students.length === 0 ? (
                 <Box sx={{ p: 3, textAlign: 'center' }}>
@@ -645,9 +701,20 @@ const UsersPage = () => {
           </Box>
           <Card sx={{ mb: 3 }}>
             <CardContent sx={{ p: 0, overflow: 'auto' }}>
-              <Box sx={{ p: 2, borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography variant="h6" sx={{ fontWeight: 700 }}>Instructors</Typography>
-                <Chip label={`${instructors.length}`} size="small" />
+              <Box sx={{ p: 2, borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 700 }}>Instructors</Typography>
+                  <Chip label={`${instructors.length}`} size="small" />
+                </Box>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<DownloadIcon />}
+                  sx={{ borderColor: '#8B3A3A', color: '#8B3A3A' }}
+                  onClick={handleDownloadInstructors}
+                >
+                  Download
+                </Button>
               </Box>
               {instructors.length === 0 ? (
                 <Box sx={{ p: 3, textAlign: 'center' }}>
@@ -892,7 +959,7 @@ const UsersPage = () => {
                   fullWidth
                   label="Email"
                   type="email"
-                  placeholder="e.g., john@university.edu"
+                  placeholder="e.g., john@iitrpr.ac.in"
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
                   disabled={creatingUser}
@@ -995,7 +1062,7 @@ const UsersPage = () => {
                   fullWidth
                   label="Email"
                   type="email"
-                  placeholder="e.g., john@university.edu"
+                  placeholder="e.g., john@iitrpr.ac.in"
                   value={editFormData?.email || ''}
                   onChange={(e) => handleEditInputChange('email', e.target.value)}
                   disabled={updatingUser || !editFormData}

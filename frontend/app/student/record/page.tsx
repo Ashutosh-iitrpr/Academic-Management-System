@@ -165,6 +165,34 @@ const StudentRecordPage = () => {
     return totalCredits > 0 ? parseFloat((totalPoints / totalCredits).toFixed(2)) : 0;
   };
 
+  const calculateSemesterGPAByType = (courses: CourseSummary[], enrollmentType: string): number => {
+    const GRADE_POINTS: Record<string, number> = {
+      A: 10,
+      A_MINUS: 9,
+      B: 8,
+      B_MINUS: 7,
+      C: 6,
+      C_MINUS: 5,
+      D: 4,
+      E: 2,
+      F: 0,
+    };
+
+    let totalPoints = 0;
+    let totalCredits = 0;
+
+    courses
+      .filter((course) => course.enrollmentType === enrollmentType)
+      .forEach((course) => {
+        if (course.grade && GRADE_POINTS[course.grade] !== undefined) {
+          totalPoints += GRADE_POINTS[course.grade] * course.credits;
+          totalCredits += course.credits;
+        }
+      });
+
+    return totalCredits > 0 ? parseFloat((totalPoints / totalCredits).toFixed(2)) : 0;
+  };
+
   if (loading) {
     return (
       <ProtectedRoute requiredRole="STUDENT">
@@ -226,11 +254,11 @@ const StudentRecordPage = () => {
           <Grid container spacing={3} sx={{ mb: 4 }}>
             <Grid item xs={12} sm={6} md={3}>
               <StatCard
-                title="CGPA"
-                value={recordData.summary.cgpa.toFixed(2)}
+                title="Main GPA"
+                value={recordData.summary.mainGPA.toFixed(2)}
                 icon={<TrendingUpIcon />}
                 color="primary"
-                subtitle="Cumulative Grade Point Average"
+                subtitle="Core Courses"
               />
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
@@ -262,6 +290,34 @@ const StudentRecordPage = () => {
             </Grid>
           </Grid>
 
+          {/* Concentration and Minor GPAs if they exist */}
+          {(recordData.summary.concentrationGPA > 0 || recordData.summary.minorGPA > 0) && (
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+              {recordData.summary.concentrationGPA > 0 && (
+                <Grid item xs={12} sm={6}>
+                  <StatCard
+                    title="Concentration GPA"
+                    value={recordData.summary.concentrationGPA.toFixed(2)}
+                    icon={<TrendingUpIcon />}
+                    color="warning"
+                    subtitle="Concentration Courses"
+                  />
+                </Grid>
+              )}
+              {recordData.summary.minorGPA > 0 && (
+                <Grid item xs={12} sm={6}>
+                  <StatCard
+                    title="Minor GPA"
+                    value={recordData.summary.minorGPA.toFixed(2)}
+                    icon={<TrendingUpIcon />}
+                    color="error"
+                    subtitle="Minor Courses"
+                  />
+                </Grid>
+              )}
+            </Grid>
+          )}
+
           {/* Semester-wise Records */}
           <Card sx={{ mb: 4, border: '1px solid #e0e0e0' }}>
             <CardContent>
@@ -279,7 +335,9 @@ const StudentRecordPage = () => {
                     ...semesterData.completed,
                     ...semesterData.dropped,
                   ];
-                  const semesterGPA = calculateSemesterGPA(semesterData.completed);
+                  const mainGPA = calculateSemesterGPAByType(semesterData.completed, 'CREDIT');
+                  const concentrationGPA = calculateSemesterGPAByType(semesterData.completed, 'CREDIT_CONCENTRATION');
+                  const minorGPA = calculateSemesterGPAByType(semesterData.completed, 'CREDIT_MINOR');
 
                   return (
                     <Accordion
@@ -310,11 +368,27 @@ const StudentRecordPage = () => {
                               {semesterData.creditsRegistered} credits registered
                             </Typography>
                           </Box>
-                          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                            {semesterGPA > 0 && (
+                          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+                            {mainGPA > 0 && (
                               <Chip
-                                label={`GPA: ${semesterGPA.toFixed(2)}`}
+                                label={`Main GPA: ${mainGPA.toFixed(2)}`}
                                 color="primary"
+                                size="small"
+                                variant="outlined"
+                              />
+                            )}
+                            {concentrationGPA > 0 && (
+                              <Chip
+                                label={`Concentration GPA: ${concentrationGPA.toFixed(2)}`}
+                                color="secondary"
+                                size="small"
+                                variant="outlined"
+                              />
+                            )}
+                            {minorGPA > 0 && (
+                              <Chip
+                                label={`Minor GPA: ${minorGPA.toFixed(2)}`}
+                                color="info"
                                 size="small"
                                 variant="outlined"
                               />
@@ -503,16 +577,26 @@ const StudentRecordPage = () => {
 
                         {/* Semester Summary */}
                         <Divider sx={{ my: 2 }} />
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', px: 1 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', px: 1, flexWrap: 'wrap', gap: 2 }}>
                           <Typography variant="body2" sx={{ color: '#666' }}>
                             Credits Earned: <strong>{semesterData.creditsEarned}</strong>
                           </Typography>
                           <Typography variant="body2" sx={{ color: '#666' }}>
                             Credits Registered: <strong>{semesterData.creditsRegistered}</strong>
                           </Typography>
-                          {semesterGPA > 0 && (
-                            <Typography variant="body2" sx={{ color: '#666' }}>
-                              Semester GPA: <strong>{semesterGPA.toFixed(2)}</strong>
+                          {mainGPA > 0 && (
+                            <Typography variant="body2" sx={{ color: '#1976d2' }}>
+                              Main GPA: <strong>{mainGPA.toFixed(2)}</strong>
+                            </Typography>
+                          )}
+                          {concentrationGPA > 0 && (
+                            <Typography variant="body2" sx={{ color: '#9c27b0' }}>
+                              Concentration GPA: <strong>{concentrationGPA.toFixed(2)}</strong>
+                            </Typography>
+                          )}
+                          {minorGPA > 0 && (
+                            <Typography variant="body2" sx={{ color: '#0288d1' }}>
+                              Minor GPA: <strong>{minorGPA.toFixed(2)}</strong>
                             </Typography>
                           )}
                         </Box>

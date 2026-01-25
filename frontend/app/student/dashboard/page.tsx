@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Grid, Box, Card, CardContent, Typography, Button, Alert, Table, TableBody, TableCell, TableHead, TableRow, Chip } from '@mui/material';
+import { Grid, Box, Card, CardContent, Typography, Button, Alert, Table, TableBody, TableCell, TableHead, TableRow, Chip, Dialog, DialogTitle, DialogContent, DialogActions, RadioGroup, FormControlLabel, Radio, FormControl, CircularProgress } from '@mui/material';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import ProtectedRoute from '@/lib/routes/ProtectedRoute';
 import StatCard from '@/components/ui/StatCard';
@@ -10,6 +10,7 @@ import StatusChip from '@/components/ui/StatusChip';
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton';
 import { useAuth } from '@/lib/auth/AuthContext';
 import studentApi from '@/lib/api/studentApi';
+import { toast } from 'sonner';
 
 // Icons
 import SchoolIcon from '@mui/icons-material/School';
@@ -55,6 +56,9 @@ interface DisplayCourseOffering {
 interface AcademicStats {
   totalEnrollments: number;
   creditsEarned: number;
+  mainGPA: number;
+  concentrationGPA: number;
+  minorGPA: number;
   cgpa: number;
   currentSemesterGPA: number;
 }
@@ -66,9 +70,16 @@ const StudentDashboard = () => {
   const [error, setError] = useState<string | null>(null);
   const [enrollments, setEnrollments] = useState<DisplayEnrollment[]>([]);
   const [availableOfferings, setAvailableOfferings] = useState<DisplayCourseOffering[]>([]);
+  const [enrollmentTypeDialogOpen, setEnrollmentTypeDialogOpen] = useState(false);
+  const [selectedOfferingForEnrollment, setSelectedOfferingForEnrollment] = useState<DisplayCourseOffering | null>(null);
+  const [selectedEnrollmentType, setSelectedEnrollmentType] = useState<'CREDIT' | 'CREDIT_CONCENTRATION' | 'CREDIT_MINOR'>('CREDIT');
+  const [enrollmentInProgress, setEnrollmentInProgress] = useState(false);
   const [stats, setStats] = useState<AcademicStats>({
     totalEnrollments: 0,
     creditsEarned: 0,
+    mainGPA: 0,
+    concentrationGPA: 0,
+    minorGPA: 0,
     cgpa: 0,
     currentSemesterGPA: 0,
   });
@@ -125,6 +136,9 @@ const StudentDashboard = () => {
         setStats({
           totalEnrollments: recordResponse.summary.totalEnrollments || 0,
           creditsEarned: recordResponse.summary.cumulativeCreditsCompleted || 0,
+          mainGPA: recordResponse.summary.mainGPA || 0,
+          concentrationGPA: recordResponse.summary.concentrationGPA || 0,
+          minorGPA: recordResponse.summary.minorGPA || 0,
           cgpa: recordResponse.summary.cgpa || 0,
           currentSemesterGPA: recordResponse.summary.currentSemesterGPA || 0,
         });
@@ -161,14 +175,34 @@ const StudentDashboard = () => {
     }
   };
 
-  const handleEnrollCourse = async (offeringId: string) => {
+  const handleEnrollClick = (offering: DisplayCourseOffering) => {
+    setSelectedOfferingForEnrollment(offering);
+    setSelectedEnrollmentType('CREDIT');
+    setEnrollmentTypeDialogOpen(true);
+  };
+
+  const handleEnrollmentTypeConfirm = async () => {
+    if (!selectedOfferingForEnrollment) return;
+    
     try {
-      await studentApi.requestEnrollment(offeringId, 'CREDIT');
+      setEnrollmentInProgress(true);
+      await studentApi.requestEnrollment(selectedOfferingForEnrollment.id, selectedEnrollmentType);
+      toast.success(`Successfully enrolled in ${selectedOfferingForEnrollment.courseName}`);
+      setEnrollmentTypeDialogOpen(false);
       // Refresh data
       window.location.reload();
     } catch (err) {
       console.error('Failed to enroll:', err);
       setError('Failed to enroll in course. Please try again.');
+    } finally {
+      setEnrollmentInProgress(false);
+    }
+  };
+
+  const handleEnrollCourse = async (offeringId: string) => {
+    const offering = availableOfferings.find(o => o.id === offeringId);
+    if (offering) {
+      handleEnrollClick(offering);
     }
   };
 
@@ -195,46 +229,76 @@ const StudentDashboard = () => {
 
           {/* Academic Stats */}
           {loading ? (
-            <LoadingSkeleton type="grid" count={4} />
+            <LoadingSkeleton type="grid" count={6} />
           ) : (
-            <Grid container spacing={3} sx={{ mb: 4 }}>
-              <Grid item xs={12} sm={6} md={3}>
-                <StatCard
-                  title="Enrollments"
-                  value={stats.totalEnrollments}
-                  icon={<SchoolIcon />}
-                  color="primary"
-                  subtitle="Active Courses"
-                />
+            <>
+              <Grid container spacing={3} sx={{ mb: 4 }}>
+                <Grid item xs={12} sm={6} md={3}>
+                  <StatCard
+                    title="Enrollments"
+                    value={stats.totalEnrollments}
+                    icon={<SchoolIcon />}
+                    color="primary"
+                    subtitle="Active Courses"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <StatCard
+                    title="Credits Earned"
+                    value={stats.creditsEarned}
+                    icon={<AssignmentIcon />}
+                    color="success"
+                    subtitle="Completed Courses"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <StatCard
+                    title="Main GPA"
+                    value={stats.mainGPA.toFixed(2)}
+                    icon={<TrendingUpIcon />}
+                    color="info"
+                    subtitle="Core Courses"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <StatCard
+                    title="Semester GPA"
+                    value={stats.currentSemesterGPA.toFixed(2)}
+                    icon={<TrendingUpIcon />}
+                    color="success"
+                    subtitle="Current Semester"
+                  />
+                </Grid>
               </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <StatCard
-                  title="Credits Earned"
-                  value={stats.creditsEarned}
-                  icon={<AssignmentIcon />}
-                  color="success"
-                  subtitle="Completed Courses"
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <StatCard
-                  title="CGPA"
-                  value={stats.cgpa.toFixed(2)}
-                  icon={<TrendingUpIcon />}
-                  color="info"
-                  subtitle="Cumulative"
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <StatCard
-                  title="Semester GPA"
-                  value={stats.currentSemesterGPA.toFixed(2)}
-                  icon={<TrendingUpIcon />}
-                  color="success"
-                  subtitle="Current Semester"
-                />
-              </Grid>
-            </Grid>
+
+              {/* Concentration and Minor GPAs if they exist */}
+              {(stats.concentrationGPA > 0 || stats.minorGPA > 0) && (
+                <Grid container spacing={3} sx={{ mb: 4 }}>
+                  {stats.concentrationGPA > 0 && (
+                    <Grid item xs={12} sm={6} md={3}>
+                      <StatCard
+                        title="Concentration GPA"
+                        value={stats.concentrationGPA.toFixed(2)}
+                        icon={<TrendingUpIcon />}
+                        color="warning"
+                        subtitle="Concentration Courses"
+                      />
+                    </Grid>
+                  )}
+                  {stats.minorGPA > 0 && (
+                    <Grid item xs={12} sm={6} md={3}>
+                      <StatCard
+                        title="Minor GPA"
+                        value={stats.minorGPA.toFixed(2)}
+                        icon={<TrendingUpIcon />}
+                        color="error"
+                        subtitle="Minor Courses"
+                      />
+                    </Grid>
+                  )}
+                </Grid>
+              )}
+            </>
           )}
 
           {/* My Enrollments */}
@@ -440,6 +504,100 @@ const StudentDashboard = () => {
             </Grid>
           </Grid>
         </Box>
+
+        {/* Enrollment Type Selection Dialog */}
+        <Dialog open={enrollmentTypeDialogOpen} onClose={() => setEnrollmentTypeDialogOpen(false)} maxWidth="sm" fullWidth>
+          <DialogTitle sx={{ fontWeight: 700 }}>
+            Select Enrollment Type
+          </DialogTitle>
+          <DialogContent sx={{ pt: 3 }}>
+            {selectedOfferingForEnrollment && (
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                  {selectedOfferingForEnrollment.courseCode} - {selectedOfferingForEnrollment.courseName}
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#666' }}>
+                  Credits: {selectedOfferingForEnrollment.credits} | Instructor: {selectedOfferingForEnrollment.instructor}
+                </Typography>
+              </Box>
+            )}
+
+            <FormControl fullWidth>
+              <RadioGroup
+                value={selectedEnrollmentType}
+                onChange={(e) => setSelectedEnrollmentType(e.target.value as any)}
+              >
+                <FormControlLabel
+                  value="CREDIT"
+                  control={<Radio />}
+                  label={
+                    <Box>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        Credit (Main Course)
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: '#666' }}>
+                        Regular course enrollment, counts towards credit limit and main GPA
+                      </Typography>
+                    </Box>
+                  }
+                  sx={{ mb: 2, alignItems: 'flex-start' }}
+                />
+                <FormControlLabel
+                  value="CREDIT_CONCENTRATION"
+                  control={<Radio />}
+                  label={
+                    <Box>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        Concentration Course
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: '#666' }}>
+                        Specialization course, separate GPA calculation, requires instructor approval
+                      </Typography>
+                    </Box>
+                  }
+                  sx={{ mb: 2, alignItems: 'flex-start' }}
+                />
+                <FormControlLabel
+                  value="CREDIT_MINOR"
+                  control={<Radio />}
+                  label={
+                    <Box>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        Minor Course
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: '#666' }}>
+                        Minor specialization, separate GPA calculation, requires instructor approval
+                      </Typography>
+                    </Box>
+                  }
+                  sx={{ alignItems: 'flex-start' }}
+                />
+              </RadioGroup>
+            </FormControl>
+
+            <Alert severity="info" sx={{ mt: 3 }}>
+              <Typography variant="body2">
+                <strong>Note:</strong> You can choose either Concentration OR Minor, not both. Main courses don't count against this restriction.
+              </Typography>
+            </Alert>
+          </DialogContent>
+          <DialogActions sx={{ p: 2 }}>
+            <Button onClick={() => setEnrollmentTypeDialogOpen(false)} sx={{ color: '#666' }}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleEnrollmentTypeConfirm}
+              variant="contained"
+              sx={{
+                backgroundColor: '#8B3A3A',
+                '&:hover': { backgroundColor: '#6B2A2A' },
+              }}
+              disabled={enrollmentInProgress}
+            >
+              {enrollmentInProgress ? <CircularProgress size={20} /> : 'Confirm Enrollment'}
+            </Button>
+          </DialogActions>
+        </Dialog>
       </DashboardLayout>
     </ProtectedRoute>
   );

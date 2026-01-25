@@ -25,9 +25,9 @@ import EmailIcon from '@mui/icons-material/Email';
 import LockIcon from '@mui/icons-material/Lock';
 
 // Demo Credentials for Testing:
-// Admin: admin@test.com | OTP: Check backend console after requesting OTP
-// Instructor: instructor@iitropar.ac.in | OTP: Check backend console
-// Student: student@iitropar.ac.in | OTP: Check backend console
+// Admin: admin@iitrpr.ac.in | OTP: Check backend console after requesting OTP
+// Instructor: instructor@iitrpr.ac.in | OTP: Check backend console
+// Student: student@iitrpr.ac.in | OTP: Check backend console
 
 const emailSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -204,7 +204,7 @@ export default function LoginPage() {
                     fullWidth
                     label="Email Address"
                     type="email"
-                    placeholder="you@iitropar.ac.in"
+                    placeholder="you@iitrpr.ac.in"
                     error={!!fieldError}
                     helperText={fieldError?.message}
                     InputProps={{

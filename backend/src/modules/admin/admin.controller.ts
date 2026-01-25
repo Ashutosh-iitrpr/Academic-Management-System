@@ -11,6 +11,7 @@ import {
   ConflictException,
   UseInterceptors,
   UploadedFile,
+  Response,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { PrismaService } from "../../prisma/prisma.service";
@@ -192,6 +193,78 @@ export class AdminController {
       },
       orderBy: { createdAt: "desc" },
     });
+  }
+
+  // 📥 Download Students Data as CSV
+  @Get("users/download/students")
+  async downloadStudentsData(@Response() res: any) {
+    const students = await this.prisma.user.findMany({
+      where: { role: "STUDENT" },
+      select: {
+        name: true,
+        email: true,
+        entryNumber: true,
+      },
+      orderBy: { email: "asc" },
+    });
+
+    // Create CSV content
+    const csvHeaders = ["Name", "Email", "Entry Number"];
+    const csvRows = students.map((student) => [
+      `"${student.name}"`, // Wrap in quotes to handle commas in names
+      student.email,
+      student.entryNumber || "",
+    ]);
+
+    const csvContent = [
+      csvHeaders.join(","),
+      ...csvRows.map((row) => row.join(",")),
+    ].join("\n");
+
+    // Set response headers for file download
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader(
+      "Content-Disposition",
+      'attachment; filename="students_' + new Date().toISOString().split("T")[0] + '.csv"'
+    );
+
+    res.send(csvContent);
+  }
+
+  // 📥 Download Instructors Data as CSV
+  @Get("users/download/instructors")
+  async downloadInstructorsData(@Response() res: any) {
+    const instructors = await this.prisma.user.findMany({
+      where: { role: "INSTRUCTOR" },
+      select: {
+        name: true,
+        email: true,
+        department: true,
+      },
+      orderBy: { email: "asc" },
+    });
+
+    // Create CSV content
+    const csvHeaders = ["Name", "Email", "Department"];
+    const csvRows = instructors.map((instructor) => [
+      `"${instructor.name}"`, // Wrap in quotes to handle commas in names
+      instructor.email,
+      instructor.department || "",
+    ]);
+
+    const csvContent = [
+      csvHeaders.join(","),
+      ...csvRows.map((row) => row.join(",")),
+    ].join("\n");
+
+    // Set response headers for file download
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader(
+      "Content-Disposition",
+      'attachment; filename="instructors_' + new Date().toISOString().split("T")[0] + '.csv"'
+    );
+
+    res.send(csvContent);
   }
 
   // ➕ Create User

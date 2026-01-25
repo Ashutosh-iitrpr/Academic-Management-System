@@ -41,6 +41,7 @@ export class CourseProposalsService {
         code: dto.code.trim(),
         name: dto.name.trim(),
         credits: dto.credits,
+        ltpsc: dto.ltpsc.trim(),
         description: dto.description?.trim() || null,
         status: "PENDING",
       },
@@ -50,6 +51,15 @@ export class CourseProposalsService {
   async getInstructorProposals(instructorId: string) {
     return this.prisma.courseProposal.findMany({
       where: { instructorId },
+      include: {
+        course: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+          },
+        },
+      },
       orderBy: { createdAt: "desc" },
     });
   }
@@ -90,6 +100,13 @@ export class CourseProposalsService {
     });
 
     if (existingCourse) {
+      // Update existing course with ltpsc if not set
+      if (!existingCourse.ltpsc && proposal.ltpsc) {
+        await this.prisma.course.update({
+          where: { id: existingCourse.id },
+          data: { ltpsc: proposal.ltpsc },
+        });
+      }
       // Just mark as approved and link to existing course
       return this.prisma.courseProposal.update({
         where: { id: proposalId },
@@ -97,6 +114,9 @@ export class CourseProposalsService {
           status: "APPROVED",
           approvedAt: new Date(),
           courseId: existingCourse.id,
+        },
+        include: {
+          course: true,
         },
       });
     }
@@ -107,6 +127,7 @@ export class CourseProposalsService {
         code: proposal.code,
         name: proposal.name,
         credits: proposal.credits,
+        ltpsc: proposal.ltpsc,
         description: proposal.description,
       },
     });
@@ -117,6 +138,9 @@ export class CourseProposalsService {
         status: "APPROVED",
         approvedAt: new Date(),
         courseId: newCourse.id,
+      },
+      include: {
+        course: true,
       },
     });
   }

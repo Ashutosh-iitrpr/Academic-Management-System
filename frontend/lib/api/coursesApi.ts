@@ -10,6 +10,7 @@ export interface Course {
   name: string;
   description?: string;
   credits: number;
+  ltpsc?: string;
   department?: string;
   prerequisites?: string;
   createdAt?: string;

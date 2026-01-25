@@ -1,8 +1,8 @@
 name,email,role,entryNumber,department
-John Doe,john.doe@university.edu,STUDENT,2023CSB0001,
-Jane Smith,jane.smith@university.edu,STUDENT,2023CSE0002,
-Alice Johnson,alice.johnson@university.edu,STUDENT,2023ECE0003,
-Bob Wilson,bob.wilson@university.edu,INSTRUCTOR,,Computer Science
-Carol Davis,carol.davis@university.edu,INSTRUCTOR,,Electrical Engineering
-David Brown,david.brown@university.edu,INSTRUCTOR,,Mathematics
-Eve Martinez,eve.martinez@university.edu,ADMIN,,
+John Doe,john.doe@iitrpr.ac.in,STUDENT,2023CSB0001,
+Jane Smith,jane.smith@iitrpr.ac.in,STUDENT,2023CSE0002,
+Alice Johnson,alice.johnson@iitrpr.ac.in,STUDENT,2023ECE0003,
+Bob Wilson,bob.wilson@iitrpr.ac.in,INSTRUCTOR,,Computer Science
+Carol Davis,carol.davis@iitrpr.ac.in,INSTRUCTOR,,Electrical Engineering
+David Brown,david.brown@iitrpr.ac.in,INSTRUCTOR,,Mathematics
+Eve Martinez,eve.martinez@iitrpr.ac.in,ADMIN,,

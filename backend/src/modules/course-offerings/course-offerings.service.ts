@@ -62,6 +62,7 @@ export class CourseOfferingsService {
       where: {
         status: {
           in: [
+            CourseOfferingStatus.PENDING,
             CourseOfferingStatus.ENROLLING,
             CourseOfferingStatus.COMPLETED,
           ],
@@ -159,6 +160,43 @@ export class CourseOfferingsService {
     }
     if (!course) {
       throw new NotFoundException("Course not found. Please create a new course proposal first.");
+    }
+
+    // Prevent duplicate requests by the same instructor for the same course and semester
+    const existing = await this.prisma.courseOffering.findFirst({
+      where: {
+        instructorId,
+        courseId: course.id,
+        semester: dto.semester,
+        status: {
+          in: [
+            CourseOfferingStatus.PENDING,
+            CourseOfferingStatus.ENROLLING,
+            CourseOfferingStatus.COMPLETED,
+          ],
+        },
+      },
+    });
+
+    if (existing) {
+      throw new ConflictException(
+        "You already have an offering request for this course and semester",
+      );
+    }
+
+    // Prevent new requests when an approved/enrolling offering already exists for this course and semester
+    const approvedInSemester = await this.prisma.courseOffering.findFirst({
+      where: {
+        courseId: course.id,
+        semester: dto.semester,
+        status: CourseOfferingStatus.ENROLLING,
+      },
+    });
+
+    if (approvedInSemester) {
+      throw new ConflictException(
+        "An approved offering already exists for this course and semester",
+      );
     }
 
     return this.prisma.courseOffering.create({

@@ -297,27 +297,29 @@ const AllOfferingsPage = () => {
 
           {/* Enrollments Dialog */}
           <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="md" fullWidth>
-            <DialogTitle>
-              <Typography variant="h6">
-                Enrollments for {selectedOffering?.course.code} - {selectedOffering?.course.name}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Instructor: {selectedOffering?.instructor?.name} | Semester: {selectedOffering?.semester}
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 2, mt: 1, alignItems: 'center' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <PeopleIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
-                  <Typography variant="body2" color="text.secondary">
-                    Total Enrollments: {selectedOffering?._count?.enrollments || 0}
-                  </Typography>
-                </Box>
-                <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center' }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Allowed Branches:
-                  </Typography>
-                  {selectedOffering?.allowedBranches.map((branch) => (
-                    <Chip key={branch} label={branch} size="small" />
-                  ))}
+            <DialogTitle disableTypography>
+              <Box>
+                <Typography variant="h6" component="div">
+                  Enrollments for {selectedOffering?.course.code} - {selectedOffering?.course.name}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" component="div">
+                  Instructor: {selectedOffering?.instructor?.name} | Semester: {selectedOffering?.semester}
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 2, mt: 1, alignItems: 'center' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <PeopleIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                    <Typography variant="body2" color="text.secondary" component="div">
+                      Total Enrollments: {selectedOffering?._count?.enrollments || 0}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <Typography variant="body2" color="text.secondary" component="div">
+                      Allowed Branches:
+                    </Typography>
+                    {selectedOffering?.allowedBranches.map((branch) => (
+                      <Chip key={branch} label={branch} size="small" />
+                    ))}
+                  </Box>
                 </Box>
               </Box>
             </DialogTitle>

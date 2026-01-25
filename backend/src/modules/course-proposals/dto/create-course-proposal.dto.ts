@@ -1,4 +1,4 @@
-import { IsInt, IsOptional, IsPositive, IsString } from "class-validator";
+import { IsInt, IsNotEmpty, IsOptional, IsPositive, IsString, Matches } from "class-validator";
 
 export class CreateCourseProposalDto {
   @IsString()
@@ -10,6 +10,13 @@ export class CreateCourseProposalDto {
   @IsInt()
   @IsPositive()
   credits: number;
+
+  @IsString()
+  @IsNotEmpty()
+  @Matches(/^\d+-\d+-\d+-\d+$/, {
+    message: "LTPSC must be in format like 3-0-0-3 (Lecture-Tutorial-Practical-Self Study)",
+  })
+  ltpsc: string;
 
    // Optional description to explain the course content
   @IsOptional()
