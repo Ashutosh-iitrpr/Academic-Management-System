@@ -16,6 +16,7 @@ import { CreateEnrollmentTriggerDto } from "./dto/create-enrollment-trigger.dto"
 import { BulkActionEnrollmentsDto } from "./dto/bulk-action-enrollments.dto";
 import { MAX_CREDITS_PER_SEMESTER } from "../../constants/academics.constants";
 import { AcademicCalendarService } from "../../common/services/academic-calendar.service";
+import { isDepartmentBranchMatch } from "../../constants/branch-department-mapping";
 
 @Injectable()
 export class EnrollmentsService {
@@ -213,7 +214,14 @@ async requestEnrollment(
   ) {
     const enrollment = await this.prisma.enrollment.findUnique({
       where: { id: enrollmentId },
-      include: { courseOffering: true },
+      include: {
+        courseOffering: {
+          include: {
+            instructor: true,
+          },
+        },
+        student: true,
+      },
     });
 
     if (!enrollment) {
@@ -232,11 +240,26 @@ async requestEnrollment(
       );
     }
 
+    // Check if instructor is a faculty advisor, if so assign them as advisor
+    const instructor = await this.prisma.user.findUnique({
+      where: { id: instructorId },
+    });
+
+    // Route to faculty advisor (department-based). Always go through advisor stage.
+    const facultyAdvisor = await this.prisma.user.findFirst({
+      where: {
+        isFacultyAdvisor: true,
+        department: instructor?.department,
+        role: 'INSTRUCTOR',
+      },
+    });
+
     return this.prisma.enrollment.update({
       where: { id: enrollmentId },
       data: {
-        status: EnrollmentStatus.ENROLLED,
-        approvedAt: new Date(),
+        status: EnrollmentStatus.PENDING_ADVISOR,
+        advisorId: facultyAdvisor?.id || null,
+        approvedAt: null,
       },
     });
   }
@@ -326,12 +349,12 @@ async requestEnrollment(
     // Perform bulk update
     const newStatus =
       dto.action === "approve"
-        ? EnrollmentStatus.ENROLLED
+        ? EnrollmentStatus.PENDING_ADVISOR
         : EnrollmentStatus.REJECTED;
 
     const updateData = {
       status: newStatus,
-      ...(dto.action === "approve" && { approvedAt: new Date() }),
+      ...(dto.action === "approve" && { approvedAt: null, advisorId: null }),
     };
 
     const result = await this.prisma.enrollment.updateMany({
@@ -346,6 +369,138 @@ async requestEnrollment(
       count: result.count,
       action: dto.action,
     };
+  }
+
+  // ================= FACULTY ADVISOR APPROVAL =================
+
+  async getPendingForAdvisor(advisorId: string) {
+    // Get advisor's department
+    const advisor = await this.prisma.user.findUnique({
+      where: { id: advisorId },
+      select: { department: true },
+    });
+
+    if (!advisor?.department) {
+      throw new ForbiddenException('Advisor does not have a department assigned');
+    }
+
+    // Get all enrollments pending advisor approval
+    const allPendingEnrollments = await this.prisma.enrollment.findMany({
+      where: {
+        status: EnrollmentStatus.PENDING_ADVISOR,
+      },
+      include: {
+        student: { select: { id: true, name: true, entryNumber: true, email: true } },
+        courseOffering: { include: { course: true, instructor: { select: { name: true } } } },
+      },
+      orderBy: { createdAt: "asc" },
+    });
+
+    // Filter enrollments where student's branch matches advisor's department
+    // Filter enrollments where student's branch matches advisor's department
+    const advisorDepartment = advisor.department; // Capture for closure
+    const matchingEnrollments = allPendingEnrollments.filter(enrollment => {
+      const studentBranch = enrollment.student.entryNumber?.substring(4, 7);
+      if (!studentBranch) return false;
+      return isDepartmentBranchMatch(advisorDepartment, studentBranch);
+    });
+
+    return matchingEnrollments;
+  }
+
+  async approveEnrollmentAsAdvisor(
+    advisorId: string,
+    enrollmentId: string,
+  ) {
+    const enrollment = await this.prisma.enrollment.findUnique({
+      where: { id: enrollmentId },
+      include: { 
+        courseOffering: true,
+        student: { select: { entryNumber: true } },
+      },
+    });
+
+    if (!enrollment) {
+      throw new NotFoundException("Enrollment not found");
+    }
+
+    // Get advisor's department
+    const advisor = await this.prisma.user.findUnique({
+      where: { id: advisorId },
+      select: { department: true },
+    });
+
+    if (!advisor?.department) {
+      throw new ForbiddenException('Advisor does not have a department assigned');
+    }
+
+    // Verify advisor's department matches student's branch
+    const studentBranch = enrollment.student.entryNumber?.substring(4, 7);
+    if (!studentBranch || !isDepartmentBranchMatch(advisor.department, studentBranch)) {
+      throw new ForbiddenException(
+        "You are not allowed to approve this enrollment (department/branch mismatch)",
+      );
+    }
+
+    if (enrollment.status !== EnrollmentStatus.PENDING_ADVISOR) {
+      throw new ForbiddenException(
+        "Enrollment is not pending advisor approval",
+      );
+    }
+
+    return this.prisma.enrollment.update({
+      where: { id: enrollmentId },
+      data: {
+        status: EnrollmentStatus.ENROLLED,
+        approvedAt: new Date(),
+      },
+    });
+  }
+
+  async rejectEnrollmentAsAdvisor(
+    advisorId: string,
+    enrollmentId: string,
+  ) {
+    const enrollment = await this.prisma.enrollment.findUnique({
+      where: { id: enrollmentId },
+      include: { 
+        courseOffering: true,
+        student: { select: { entryNumber: true } },
+      },
+    });
+
+    if (!enrollment) {
+      throw new NotFoundException("Enrollment not found");
+    }
+
+    // Get advisor's department
+    const advisor = await this.prisma.user.findUnique({
+      where: { id: advisorId },
+      select: { department: true },
+    });
+
+    if (!advisor?.department) {
+      throw new ForbiddenException('Advisor does not have a department assigned');
+    }
+
+    // Verify advisor's department matches student's branch
+    const studentBranch = enrollment.student.entryNumber?.substring(4, 7);
+    if (!studentBranch || !isDepartmentBranchMatch(advisor.department, studentBranch)) {
+      throw new ForbiddenException(
+        "You are not allowed to reject this enrollment (department/branch mismatch)",
+      );
+    }
+
+    if (enrollment.status !== EnrollmentStatus.PENDING_ADVISOR) {
+      throw new ForbiddenException(
+        "Enrollment is not pending advisor approval",
+      );
+    }
+
+    return this.prisma.enrollment.update({
+      where: { id: enrollmentId },
+      data: { status: EnrollmentStatus.REJECTED },
+    });
   }
 
   // ================= STUDENT DROP / AUDIT =================

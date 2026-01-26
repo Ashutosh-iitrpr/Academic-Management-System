@@ -155,11 +155,11 @@ const CoursesPage = () => {
       return false;
     }
     if (!formData.ltpsc.trim()) {
-      setError('LTPSC is required (e.g., 3-0-0-3)');
+      setError('LTPSC is required (e.g., 3-0-0-0-3)');
       return false;
     }
-    if (!/^\d+-\d+-\d+-\d+$/.test(formData.ltpsc)) {
-      setError('LTPSC format must be like 3-0-0-3 (Lecture-Tutorial-Practical-Self Study)');
+    if (!/^\d+-\d+-\d+-\d+-\d+$/.test(formData.ltpsc)) {
+      setError('LTPSC format must be like 3-0-0-0-3 (Lecture-Tutorial-Practical-self study-credits)');
       return false;
     }
     return true;
@@ -422,7 +422,7 @@ const CoursesPage = () => {
                 value={formData.ltpsc}
                 onChange={(e) => handleInputChange('ltpsc', e.target.value)}
                 disabled={creatingCourse}
-                helperText="Format: Lecture-Tutorial-Practical-Self Study (e.g., 3-0-0-3)"
+                helperText="Format: Lecture-Tutorial-Practical-Self Study-Credits (e.g., 3-0-0-0-3)"
               />
               <TextField
                 fullWidth

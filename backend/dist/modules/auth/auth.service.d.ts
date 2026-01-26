@@ -16,6 +16,7 @@ export declare class AuthService {
             role: import("@prisma/client").$Enums.Role;
             entryNumber: string | null;
             department: string | null;
+            isFacultyAdvisor: boolean;
         };
     }>;
     getCurrentUser(userId: string): Promise<{
@@ -26,5 +27,6 @@ export declare class AuthService {
         entryNumber: string | null;
         department: string | null;
         branch: string | null;
+        isFacultyAdvisor: boolean;
     }>;
 }

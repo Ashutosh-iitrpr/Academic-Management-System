@@ -159,4 +159,10 @@
     z-index: -1;
     pointer-events: none;
   }
+
+  @media (max-width: 900px) {
+    body::before {
+      display: none;
+    }
+  }
 }

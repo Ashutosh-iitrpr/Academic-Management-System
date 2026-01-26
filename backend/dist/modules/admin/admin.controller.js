@@ -140,6 +140,7 @@ let AdminController = class AdminController {
                 role: true,
                 entryNumber: true,
                 department: true,
+                isFacultyAdvisor: true,
                 isActive: true,
                 createdAt: true,
             },
@@ -353,10 +354,16 @@ let AdminController = class AdminController {
             if (dto.department !== undefined) {
                 data.department = dto.department;
             }
+            if (dto.isFacultyAdvisor !== undefined) {
+                data.isFacultyAdvisor = dto.isFacultyAdvisor;
+            }
         }
         else {
             if (dto.department !== undefined) {
                 throw new common_1.BadRequestException("Only instructors can have departments");
+            }
+            if (dto.isFacultyAdvisor !== undefined) {
+                throw new common_1.BadRequestException("Only instructors can be faculty advisors");
             }
         }
         try {
@@ -370,6 +377,7 @@ let AdminController = class AdminController {
                     role: true,
                     entryNumber: true,
                     department: true,
+                    isFacultyAdvisor: true,
                     isActive: true,
                     createdAt: true,
                 },

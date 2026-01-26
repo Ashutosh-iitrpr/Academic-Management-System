@@ -29,15 +29,27 @@ let UsersService = class UsersService {
             throw new common_1.BadRequestException("Only students can have entry numbers");
         }
         try {
-            return await this.prisma.user.create({
+            const createdUser = await this.prisma.user.create({
                 data: {
                     name: dto.name,
                     email: dto.email,
                     role: dto.role,
                     entryNumber: dto.role === "STUDENT" ? dto.entryNumber : null,
                     department: dto.department,
+                    isFacultyAdvisor: false,
                 },
             });
+            return {
+                id: createdUser.id,
+                name: createdUser.name,
+                email: createdUser.email,
+                role: createdUser.role,
+                entryNumber: createdUser.entryNumber,
+                department: createdUser.department,
+                isFacultyAdvisor: createdUser.isFacultyAdvisor,
+                isActive: createdUser.isActive,
+                createdAt: createdUser.createdAt,
+            };
         }
         catch (error) {
             throw new common_2.ConflictException("User with this email or entry number already exists");
@@ -86,8 +98,47 @@ let UsersService = class UsersService {
                 email: true,
                 role: true,
                 department: true,
+                isFacultyAdvisor: true,
             },
         });
+    }
+    async updateUser(userId, updateData) {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+        });
+        if (!user) {
+            throw new common_1.NotFoundException(`User with ID ${userId} not found`);
+        }
+        const dataToUpdate = {};
+        if (updateData.name !== undefined)
+            dataToUpdate.name = updateData.name;
+        if (updateData.email !== undefined)
+            dataToUpdate.email = updateData.email;
+        if (updateData.department !== undefined)
+            dataToUpdate.department = updateData.department;
+        if (updateData.entryNumber !== undefined)
+            dataToUpdate.entryNumber = updateData.entryNumber;
+        if (updateData.isFacultyAdvisor !== undefined) {
+            if (user.role !== 'INSTRUCTOR') {
+                throw new common_1.BadRequestException('Only instructors can be faculty advisors');
+            }
+            dataToUpdate.isFacultyAdvisor = updateData.isFacultyAdvisor;
+        }
+        const updatedUser = await this.prisma.user.update({
+            where: { id: userId },
+            data: dataToUpdate,
+        });
+        return {
+            id: updatedUser.id,
+            name: updatedUser.name,
+            email: updatedUser.email,
+            role: updatedUser.role,
+            entryNumber: updatedUser.entryNumber,
+            department: updatedUser.department,
+            isFacultyAdvisor: updatedUser.isFacultyAdvisor,
+            isActive: updatedUser.isActive,
+            createdAt: updatedUser.createdAt,
+        };
     }
     async getAllUsers() {
         return this.prisma.user.findMany({
@@ -98,6 +149,7 @@ let UsersService = class UsersService {
                 role: true,
                 entryNumber: true,
                 department: true,
+                isFacultyAdvisor: true,
                 isActive: true,
                 createdAt: true,
             },

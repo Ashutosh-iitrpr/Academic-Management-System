@@ -85,79 +85,70 @@ const StudentDashboard = () => {
   });
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // Fetch student record
-        const recordResponse = await studentApi.getStudentRecord();
-        
-        // Transform enrollments for display from semester-wise structure
-        const displayEnrollments: DisplayEnrollment[] = [];
-        Object.values(recordResponse.semesterWiseEnrollments || {}).forEach((semester: any) => {
-          [...(semester.ongoing || []), ...(semester.completed || [])].forEach((course: CourseSummary) => {
-            displayEnrollments.push({
-              id: course.courseCode, // Use courseCode as ID for now
-              courseCode: course.courseCode,
-              courseName: course.courseName,
-              instructor: course.instructor,
-              credits: course.credits,
-              type: course.enrollmentType,
-              status: course.status,
-              grade: course.grade,
-            });
-          });
-        });
-        setEnrollments(displayEnrollments);
-
-        // Fetch available offerings
-        const offerings = await studentApi.getAvailableOfferings();
-        const displayOfferings: DisplayCourseOffering[] = offerings.map((o) => {
-          const isEnrolled = displayEnrollments.some((e) => e.courseCode === o.course.code);
-          const isBranchAllowed = o.allowedBranches.includes(user?.branch || '');
-          const canEnroll = !isEnrolled && isBranchAllowed;
-          
-          return {
-            id: o.id,
-            courseCode: o.course.code,
-            courseName: o.course.name,
-            credits: o.course.credits,
-            instructor: o.instructor.name,
-            timeSlot: o.timeSlot,
-            branches: o.allowedBranches,
-            enrolled: isEnrolled,
-            canEnroll: canEnroll,
-          };
-        });
-        setAvailableOfferings(displayOfferings);
-
-        // Calculate stats from the response summary
-        setStats({
-          totalEnrollments: recordResponse.summary.totalEnrollments || 0,
-          creditsEarned: recordResponse.summary.cumulativeCreditsCompleted || 0,
-          mainGPA: recordResponse.summary.mainGPA || 0,
-          concentrationGPA: recordResponse.summary.concentrationGPA || 0,
-          minorGPA: recordResponse.summary.minorGPA || 0,
-          cgpa: recordResponse.summary.cgpa || 0,
-          currentSemesterGPA: recordResponse.summary.currentSemesterGPA || 0,
-        });
-      } catch (err) {
-        console.error('Failed to fetch student dashboard:', err);
-        setError('Failed to load dashboard data. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+    fetchDashboardData();
   }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Fetch enrollments directly
+      const enrollmentsData = await studentApi.getMyEnrollments();
+      const displayEnrollments: DisplayEnrollment[] = enrollmentsData.map((e: any) => ({
+        id: e.id,
+        courseCode: e.courseOffering.course.code,
+        courseName: e.courseOffering.course.name,
+        instructor: e.courseOffering.instructor.name,
+        credits: e.courseOffering.course.credits,
+        type: e.enrollmentType,
+        status: e.status,
+        grade: e.grade,
+      }));
+      setEnrollments(displayEnrollments);
+
+      // Fetch available offerings
+      const offerings = await studentApi.getAvailableOfferings();
+      const displayOfferings: DisplayCourseOffering[] = offerings.map((o: any) => {
+        const isEnrolled = displayEnrollments.some((e) => e.courseCode === o.course.code);
+        const isBranchAllowed = o.allowedBranches?.includes(user?.branch || '');
+        return {
+          id: o.id,
+          courseCode: o.course.code,
+          courseName: o.course.name,
+          credits: o.course.credits,
+          instructor: o.instructor.name,
+          timeSlot: o.timeSlot,
+          branches: o.allowedBranches || [],
+          enrolled: isEnrolled,
+          canEnroll: Boolean(!isEnrolled && isBranchAllowed),
+        };
+      });
+      setAvailableOfferings(displayOfferings);
+
+      // Fetch record summary for stats
+      const recordResponse = await studentApi.getStudentRecord();
+      setStats({
+        totalEnrollments: recordResponse.summary.totalEnrollments || 0,
+        creditsEarned: recordResponse.summary.cumulativeCreditsCompleted || 0,
+        mainGPA: recordResponse.summary.mainGPA || 0,
+        concentrationGPA: recordResponse.summary.concentrationGPA || 0,
+        minorGPA: recordResponse.summary.minorGPA || 0,
+        cgpa: recordResponse.summary.cgpa || 0,
+        currentSemesterGPA: recordResponse.summary.currentSemesterGPA || 0,
+      });
+    } catch (err) {
+      console.error('Failed to fetch student dashboard:', err);
+      setError('Failed to load dashboard data. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleDropEnrollment = async (enrollmentId: string) => {
     try {
       await studentApi.dropEnrollment(enrollmentId);
-      // Refresh data
-      window.location.reload();
+      await fetchDashboardData();
     } catch (err) {
       console.error('Failed to drop enrollment:', err);
       setError('Failed to drop enrollment. Please try again.');
@@ -167,8 +158,7 @@ const StudentDashboard = () => {
   const handleAuditEnrollment = async (enrollmentId: string) => {
     try {
       await studentApi.auditEnrollment(enrollmentId);
-      // Refresh data
-      window.location.reload();
+      await fetchDashboardData();
     } catch (err) {
       console.error('Failed to audit enrollment:', err);
       setError('Failed to audit enrollment. Please try again.');
@@ -189,8 +179,7 @@ const StudentDashboard = () => {
       await studentApi.requestEnrollment(selectedOfferingForEnrollment.id, selectedEnrollmentType);
       toast.success(`Successfully enrolled in ${selectedOfferingForEnrollment.courseName}`);
       setEnrollmentTypeDialogOpen(false);
-      // Refresh data
-      window.location.reload();
+      await fetchDashboardData();
     } catch (err) {
       console.error('Failed to enroll:', err);
       setError('Failed to enroll in course. Please try again.');

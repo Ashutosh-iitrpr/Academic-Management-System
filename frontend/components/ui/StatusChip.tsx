@@ -3,7 +3,7 @@
 import React from 'react';
 import { Chip } from '@mui/material';
 
-type StatusType = 'PENDING' | 'ENROLLING' | 'REJECTED' | 'WITHDRAWN' | 'COMPLETED' | 'ACTIVE' | 'DROPPED' | 'OPEN' | 'CLOSED' | 'APPROVED';
+type StatusType = 'PENDING' | 'ENROLLING' | 'REJECTED' | 'WITHDRAWN' | 'COMPLETED' | 'ACTIVE' | 'DROPPED' | 'OPEN' | 'CLOSED' | 'APPROVED' | 'PENDING_INSTRUCTOR' | 'PENDING_ADVISOR' | 'ENROLLED';
 
 interface StatusChipProps {
   status: StatusType;
@@ -12,7 +12,10 @@ interface StatusChipProps {
 
 const statusConfig: Record<StatusType, { label: string; color: 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'; variant: 'filled' | 'outlined' }> = {
   PENDING: { label: 'Pending', color: 'default', variant: 'filled' },
+  PENDING_INSTRUCTOR: { label: 'Pending Instructor', color: 'warning', variant: 'filled' },
+  PENDING_ADVISOR: { label: 'Pending Advisor', color: 'warning', variant: 'filled' },
   ENROLLING: { label: 'Enrolling', color: 'success', variant: 'filled' },
+  ENROLLED: { label: 'Enrolled', color: 'success', variant: 'filled' },
   REJECTED: { label: 'Rejected', color: 'error', variant: 'filled' },
   WITHDRAWN: { label: 'Withdrawn', color: 'warning', variant: 'filled' },
   COMPLETED: { label: 'Completed', color: 'info', variant: 'filled' },
