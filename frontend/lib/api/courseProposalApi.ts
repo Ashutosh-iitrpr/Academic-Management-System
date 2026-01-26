@@ -7,6 +7,7 @@ export interface CourseProposal {
   code: string;
   name: string;
   credits: number;
+  ltpsc?: string;
   status: string;
   description?: string;
   instructor?: {
@@ -23,6 +24,7 @@ export interface CreateCourseProposalDto {
   code: string;
   name: string;
   credits: number;
+  ltpsc: string;
   description?: string;
 }
 

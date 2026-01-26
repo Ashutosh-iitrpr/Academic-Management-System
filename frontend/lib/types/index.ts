@@ -25,6 +25,7 @@ export interface Course {
   code: string;
   name: string;
   credits: number;
+  ltpsc?: string;
   description?: string;
 }
 

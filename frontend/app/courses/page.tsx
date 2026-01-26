@@ -47,6 +47,17 @@ const CoursesPage = () => {
   const [dialogType, setDialogType] = useState<'view' | 'request'>('view');
   const [submitting, setSubmitting] = useState(false);
 
+  // Track this instructor's offerings to disable request button once requested
+  const [existingOfferingCourseIds, setExistingOfferingCourseIds] = useState<Set<string>>(new Set());
+  // Track approved (enrolling) offerings by course and semester to prevent duplicate requests
+  const [approvedOfferingsMap, setApprovedOfferingsMap] = useState<Map<string, Set<string>>>(new Map());
+
+  const [semesters, setSemesters] = useState<string[]>([]);
+  const [semestersLoading, setSemestersLoading] = useState(false);
+
+  const isInstructor = user?.role === 'INSTRUCTOR';
+  const isStudent = user?.role === 'STUDENT';
+
   // Form state for requesting offering
   const [offeringForm, setOfferingForm] = useState({
     semester: '',
@@ -71,6 +82,71 @@ const CoursesPage = () => {
   useEffect(() => {
     fetchCourses();
   }, []);
+
+  const loadOfferings = async () => {
+    if (!isInstructor) return;
+    try {
+      const [mine, all] = await Promise.all([
+        instructorApi.getCourseOfferings(),
+        instructorApi.getAllCourseOfferings(),
+      ]);
+
+      const ids = new Set<string>();
+      mine.forEach(o => {
+        const courseId = o.course?.id || o.courseId;
+        if (courseId) ids.add(courseId);
+      });
+      setExistingOfferingCourseIds(ids);
+
+      const approvedMap = new Map<string, Set<string>>();
+      all.forEach(o => {
+        if (o.status !== 'ENROLLING') return;
+        const courseId = o.course?.id || o.courseId;
+        if (!courseId || !o.semester) return;
+        if (!approvedMap.has(courseId)) approvedMap.set(courseId, new Set());
+        approvedMap.get(courseId)!.add(o.semester);
+      });
+      setApprovedOfferingsMap(approvedMap);
+    } catch (error: any) {
+      console.error('Failed to load instructor offerings:', error);
+    }
+  };
+
+  const buildFallbackSemesters = (): string[] => {
+    const now = new Date();
+    const year = now.getFullYear();
+    return [
+      `Spring ${year}`,
+      `Summer ${year}`,
+      `Fall ${year}`,
+      `Spring ${year + 1}`,
+    ];
+  };
+
+  const loadSemesters = async () => {
+    try {
+      setSemestersLoading(true);
+      const semestersRes = await instructorApi.getSemesters();
+      const fromBackend = Array.isArray(semestersRes) ? semestersRes.filter(Boolean) : [];
+      setSemesters(fromBackend.length ? fromBackend : buildFallbackSemesters());
+    } catch (e) {
+      console.error('Failed to load semesters', e);
+      setSemesters(buildFallbackSemesters());
+      toast.error('Failed to load semesters');
+    } finally {
+      setSemestersLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isInstructor) return;
+    loadSemesters();
+  }, [isInstructor]);
+
+  // Load this instructor's offerings so we can disable request buttons after they request
+  useEffect(() => {
+    loadOfferings();
+  }, [isInstructor]);
 
   // Handle search
   useEffect(() => {
@@ -125,6 +201,19 @@ const CoursesPage = () => {
         return;
       }
 
+      // Prevent duplicate requests on client if we already have this course
+      if (existingOfferingCourseIds.has(selectedCourse.id)) {
+        toast.error('You already requested an offering for this course');
+        return;
+      }
+
+      // Prevent requesting when an offering for this course and semester is already approved/enrolling
+      const approvedSemesters = approvedOfferingsMap.get(selectedCourse.id);
+      if (approvedSemesters?.has(offeringForm.semester)) {
+        toast.error('An approved offering already exists for this course and semester');
+        return;
+      }
+
       setSubmitting(true);
       const dto: CreateOfferingDto = {
         courseId: selectedCourse.id,
@@ -136,6 +225,7 @@ const CoursesPage = () => {
       await instructorApi.requestCourseOffering(dto);
       toast.success('Course offering requested successfully');
       handleCloseDialog();
+      await loadOfferings();
     } catch (error: any) {
       console.error('Failed to request offering:', error);
       toast.error(error.response?.data?.message || 'Failed to request offering');
@@ -145,11 +235,7 @@ const CoursesPage = () => {
   };
 
   const BRANCHES = ['CSB', 'MEB', 'ECB', 'EEB', 'CEB'];
-  const SEMESTERS = ['Spring 2026', 'Summer 2026', 'Fall 2026', 'Spring 2027'];
   const TIME_SLOTS = ['PC1', 'PC2', 'PC3', 'PC4', 'PC5', 'PC6'];
-
-  const isInstructor = user?.role === 'INSTRUCTOR';
-  const isStudent = user?.role === 'STUDENT';
 
   return (
     <ProtectedRoute>
@@ -259,6 +345,16 @@ const CoursesPage = () => {
                             {course.credits}
                           </Typography>
                         </Box>
+                        {course.ltpsc && (
+                          <Box>
+                            <Typography variant="caption" sx={{ color: '#999', fontWeight: 600, display: 'block', mb: 0.5 }}>
+                              LTPSC
+                            </Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                              {course.ltpsc}
+                            </Typography>
+                          </Box>
+                        )}
                         {course.department && (
                           <Box>
                             <Typography variant="caption" sx={{ color: '#999', fontWeight: 600, display: 'block', mb: 0.5 }}>
@@ -299,20 +395,32 @@ const CoursesPage = () => {
                           View Details
                         </Button>
                         {isInstructor && (
-                          <Button
-                            fullWidth
-                            size="small"
-                            variant="contained"
-                            startIcon={<AddIcon />}
-                            sx={{
-                              backgroundColor: '#8B3A3A',
-                              '&:hover': { backgroundColor: '#6B2A2A' },
-                              textTransform: 'none',
-                            }}
-                            onClick={() => handleOpenRequestDialog(course)}
-                          >
-                            Request Offering
-                          </Button>
+                          (() => {
+                            const approvedSemesters = approvedOfferingsMap.get(course.id);
+                            const hasAnyApproved = (approvedSemesters?.size || 0) > 0;
+                            const hasOffering = existingOfferingCourseIds.has(course.id) || hasAnyApproved;
+                            return (
+                              <Button
+                                fullWidth
+                                size="small"
+                                variant="contained"
+                                startIcon={<AddIcon />}
+                                sx={{
+                                  backgroundColor: '#8B3A3A',
+                                  '&:hover': { backgroundColor: '#6B2A2A' },
+                                  textTransform: 'none',
+                                }}
+                                onClick={() => handleOpenRequestDialog(course)}
+                                disabled={hasOffering}
+                              >
+                                {hasAnyApproved
+                                  ? 'Offering Approved'
+                                  : hasOffering
+                                  ? 'Offering Requested'
+                                  : 'Request Offering'}
+                              </Button>
+                            );
+                          })()
                         )}
                       </Box>
                     </CardContent>
@@ -391,8 +499,14 @@ const CoursesPage = () => {
                   backgroundColor: '#8B3A3A',
                   '&:hover': { backgroundColor: '#6B2A2A' },
                 }}
+                disabled={existingOfferingCourseIds.has(selectedCourse.id) ||
+                  ((approvedOfferingsMap.get(selectedCourse.id)?.size || 0) > 0)}
               >
-                Request Offering
+                {(approvedOfferingsMap.get(selectedCourse.id)?.size || 0) > 0
+                  ? 'Offering Approved'
+                  : existingOfferingCourseIds.has(selectedCourse.id)
+                  ? 'Offering Requested'
+                  : 'Request Offering'}
               </Button>
             )}
           </DialogActions>
@@ -419,8 +533,17 @@ const CoursesPage = () => {
                 value={offeringForm.semester}
                 label="Semester *"
                 onChange={(e) => setOfferingForm(prev => ({ ...prev, semester: e.target.value }))}
+                disabled={semestersLoading}
               >
-                {SEMESTERS.map(sem => (
+                {semestersLoading && (
+                  <MenuItem value="" disabled>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <CircularProgress size={16} />
+                      Loading semesters...
+                    </Box>
+                  </MenuItem>
+                )}
+                {semesters.map(sem => (
                   <MenuItem key={sem} value={sem}>
                     {sem}
                   </MenuItem>

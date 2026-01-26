@@ -10,6 +10,7 @@ export interface Course {
   name: string;
   description?: string;
   credits: number;
+  ltpsc?: string;
   department?: string;
   prerequisites?: string;
   createdAt?: string;
@@ -55,6 +56,9 @@ export interface StudentRecord {
     cumulativeCreditsCompleted: number;
     creditsOngoing: number;
     totalEnrollments: number;
+    mainGPA: number;
+    concentrationGPA: number;
+    minorGPA: number;
     cgpa: number;
     currentSemesterGPA: number;
   };

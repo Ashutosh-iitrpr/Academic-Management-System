@@ -146,6 +146,54 @@ let AdminController = class AdminController {
             orderBy: { createdAt: "desc" },
         });
     }
+    async downloadStudentsData(res) {
+        const students = await this.prisma.user.findMany({
+            where: { role: "STUDENT" },
+            select: {
+                name: true,
+                email: true,
+                entryNumber: true,
+            },
+            orderBy: { email: "asc" },
+        });
+        const csvHeaders = ["Name", "Email", "Entry Number"];
+        const csvRows = students.map((student) => [
+            `"${student.name}"`,
+            student.email,
+            student.entryNumber || "",
+        ]);
+        const csvContent = [
+            csvHeaders.join(","),
+            ...csvRows.map((row) => row.join(",")),
+        ].join("\n");
+        res.setHeader("Content-Type", "text/csv; charset=utf-8");
+        res.setHeader("Content-Disposition", 'attachment; filename="students_' + new Date().toISOString().split("T")[0] + '.csv"');
+        res.send(csvContent);
+    }
+    async downloadInstructorsData(res) {
+        const instructors = await this.prisma.user.findMany({
+            where: { role: "INSTRUCTOR" },
+            select: {
+                name: true,
+                email: true,
+                department: true,
+            },
+            orderBy: { email: "asc" },
+        });
+        const csvHeaders = ["Name", "Email", "Department"];
+        const csvRows = instructors.map((instructor) => [
+            `"${instructor.name}"`,
+            instructor.email,
+            instructor.department || "",
+        ]);
+        const csvContent = [
+            csvHeaders.join(","),
+            ...csvRows.map((row) => row.join(",")),
+        ].join("\n");
+        res.setHeader("Content-Type", "text/csv; charset=utf-8");
+        res.setHeader("Content-Disposition", 'attachment; filename="instructors_' + new Date().toISOString().split("T")[0] + '.csv"');
+        res.send(csvContent);
+    }
     async createUser(dto) {
         if (dto.role === "STUDENT" && !dto.entryNumber) {
             throw new common_1.NotFoundException("Entry number is required for students");
@@ -466,6 +514,20 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], AdminController.prototype, "getAllUsers", null);
+__decorate([
+    (0, common_1.Get)("users/download/students"),
+    __param(0, (0, common_1.Response)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AdminController.prototype, "downloadStudentsData", null);
+__decorate([
+    (0, common_1.Get)("users/download/instructors"),
+    __param(0, (0, common_1.Response)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AdminController.prototype, "downloadInstructorsData", null);
 __decorate([
     (0, common_1.Post)("users"),
     __param(0, (0, common_1.Body)()),

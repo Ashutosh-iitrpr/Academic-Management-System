@@ -55,9 +55,34 @@ let EnrollmentsService = class EnrollmentsService {
         if (existing) {
             throw new common_1.BadRequestException("Enrollment already exists");
         }
+        if (dto.enrollmentType === 'CREDIT_CONCENTRATION' ||
+            dto.enrollmentType === 'CREDIT_MINOR') {
+            const oppositeType = dto.enrollmentType === 'CREDIT_CONCENTRATION'
+                ? 'CREDIT_MINOR'
+                : 'CREDIT_CONCENTRATION';
+            const hasOpposite = await this.prisma.enrollment.findFirst({
+                where: {
+                    studentId,
+                    enrollmentType: oppositeType,
+                    status: {
+                        in: [
+                            client_1.EnrollmentStatus.PENDING_INSTRUCTOR,
+                            client_1.EnrollmentStatus.ENROLLED,
+                            client_1.EnrollmentStatus.AUDIT,
+                            client_1.EnrollmentStatus.COMPLETED,
+                        ],
+                    },
+                },
+            });
+            if (hasOpposite) {
+                throw new common_1.BadRequestException(`Cannot request ${dto.enrollmentType.replace('CREDIT_', '').toLowerCase()}. ` +
+                    `Student already has ${oppositeType.replace('CREDIT_', '').toLowerCase()} enrollments`);
+            }
+        }
         const activeEnrollments = await this.prisma.enrollment.findMany({
             where: {
                 studentId,
+                enrollmentType: 'CREDIT',
                 status: client_1.EnrollmentStatus.ENROLLED,
                 courseOffering: {
                     semester: offering.semester,

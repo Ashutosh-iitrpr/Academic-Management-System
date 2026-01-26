@@ -1,6 +1,6 @@
 'use client';
 
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useEffect } from 'react';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Box, CircularProgress } from '@mui/material';
@@ -14,6 +14,21 @@ interface ProtectedRouteProps {
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole }) => {
   const { user, loading, isAuthenticated } = useAuth();
   const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && (!isAuthenticated || !user)) {
+      router.push('/login');
+    }
+  }, [loading, isAuthenticated, user, router]);
+
+  useEffect(() => {
+    if (!loading && user && requiredRole) {
+      const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+      if (!roles.includes(user.role)) {
+        router.push('/unauthorized');
+      }
+    }
+  }, [loading, user, requiredRole, router]);
 
   if (loading) {
     return (
@@ -31,14 +46,12 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requir
   }
 
   if (!isAuthenticated || !user) {
-    router.push('/login');
     return null;
   }
 
   if (requiredRole) {
     const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
     if (!roles.includes(user.role)) {
-      router.push('/unauthorized');
       return null;
     }
   }

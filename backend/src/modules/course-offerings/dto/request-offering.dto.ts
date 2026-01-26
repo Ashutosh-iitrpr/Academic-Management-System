@@ -29,3 +29,6 @@ export class RequestOfferingDto {
   })
   allowedBranches: string[];
 }
+
+// Note: Course must exist in the system with LTPSC field populated.
+// The instructor should ensure the course has been created with the LTPSC value (e.g., "3-0-0-3")

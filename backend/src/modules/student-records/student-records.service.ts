@@ -65,12 +65,23 @@ export class StudentRecordsService {
 
     let cumulativeCreditsCompleted = 0;
     let creditsOngoing = 0;
-    let totalGradePoints = 0;
-    let totalCreditsAttempted = 0;
-    let totalCreditsEarned = 0;
-    let currentSemesterGradePoints = 0;
+    
+    // Separate GPA tracking for main (CREDIT), concentration, and minor
+    let mainGradePoints = 0;
+    let mainCreditsAttempted = 0;
+    let mainCreditsEarned = 0;
+    
+    let concentrationGradePoints = 0;
+    let concentrationCreditsAttempted = 0;
+    let concentrationCreditsEarned = 0;
+    
+    let minorGradePoints = 0;
+    let minorCreditsAttempted = 0;
+    let minorCreditsEarned = 0;
+    
+    let currentSemesterMainGradePoints = 0;
+    let currentSemesterMainCreditsEarned = 0;
     let currentSemesterCredits = 0;
-    let currentSemesterCreditsEarned = 0;
 
     // Get all unique semesters to find current semester
     const allSemesters = [...new Set(enrollments.map(e => e.courseOffering.semester))];
@@ -114,14 +125,25 @@ export class StudentRecordsService {
 
         // Calculate GPA for completed courses
         const gradePoints = GRADE_POINTS[grade] ?? 0;
-        totalGradePoints += gradePoints * course.credits;
-        totalCreditsAttempted += course.credits;
-        totalCreditsEarned += course.credits;
-
-        // Track current semester GPA
-        if (semester === currentSemester) {
-          currentSemesterGradePoints += gradePoints * course.credits;
-          currentSemesterCreditsEarned += course.credits;
+        
+        // Separate by enrollment type
+        if (e.enrollmentType === 'CREDIT') {
+          mainGradePoints += gradePoints * course.credits;
+          mainCreditsAttempted += course.credits;
+          mainCreditsEarned += course.credits;
+          
+          if (semester === currentSemester) {
+            currentSemesterMainGradePoints += gradePoints * course.credits;
+            currentSemesterMainCreditsEarned += course.credits;
+          }
+        } else if (e.enrollmentType === 'CREDIT_CONCENTRATION') {
+          concentrationGradePoints += gradePoints * course.credits;
+          concentrationCreditsAttempted += course.credits;
+          concentrationCreditsEarned += course.credits;
+        } else if (e.enrollmentType === 'CREDIT_MINOR') {
+          minorGradePoints += gradePoints * course.credits;
+          minorCreditsAttempted += course.credits;
+          minorCreditsEarned += course.credits;
         }
       }
 
@@ -133,8 +155,8 @@ export class StudentRecordsService {
         semesterWiseEnrollments[semester].creditsRegistered += course.credits;
         creditsOngoing += course.credits;
 
-        // Track current semester ongoing credits
-        if (semester === currentSemester) {
+        // Track current semester ongoing credits (only non-audit)
+        if (semester === currentSemester && e.status !== EnrollmentStatus.AUDIT) {
           currentSemesterCredits += course.credits;
         }
       }
@@ -144,14 +166,24 @@ export class StudentRecordsService {
       }
     }
 
-    // Calculate CGPA
-    const cgpa = totalCreditsAttempted > 0
-      ? parseFloat((totalGradePoints / totalCreditsAttempted).toFixed(2))
+    // Calculate CGPA for main courses only
+    const cgpa = mainCreditsAttempted > 0
+      ? parseFloat((mainGradePoints / mainCreditsAttempted).toFixed(2))
       : 0;
 
-    // Calculate current semester GPA
-    const currentSemesterGPA = currentSemesterCreditsEarned > 0
-      ? parseFloat((currentSemesterGradePoints / currentSemesterCreditsEarned).toFixed(2))
+    // Calculate current semester GPA for main courses only
+    const currentSemesterGPA = currentSemesterMainCreditsEarned > 0
+      ? parseFloat((currentSemesterMainGradePoints / currentSemesterMainCreditsEarned).toFixed(2))
+      : 0;
+    
+    // Calculate separate GPA for concentration
+    const concentrationGPA = concentrationCreditsAttempted > 0
+      ? parseFloat((concentrationGradePoints / concentrationCreditsAttempted).toFixed(2))
+      : 0;
+    
+    // Calculate separate GPA for minor
+    const minorGPA = minorCreditsAttempted > 0
+      ? parseFloat((minorGradePoints / minorCreditsAttempted).toFixed(2))
       : 0;
 
     return {
@@ -166,6 +198,9 @@ export class StudentRecordsService {
         cumulativeCreditsCompleted,
         creditsOngoing,
         totalEnrollments: enrollments.length,
+        mainGPA: cgpa,
+        concentrationGPA,
+        minorGPA,
         cgpa,
         currentSemesterGPA,
       },
@@ -295,9 +330,18 @@ export class StudentRecordsService {
 
     const semesterMap: Record<string, any> = {};
 
-    let totalGradePoints = 0;
-    let totalCreditsAttempted = 0;
-    let totalCreditsEarned = 0;
+    // Separate tracking for main, concentration, and minor
+    let mainGradePoints = 0;
+    let mainCreditsAttempted = 0;
+    let mainCreditsEarned = 0;
+    
+    let concentrationGradePoints = 0;
+    let concentrationCreditsAttempted = 0;
+    let concentrationCreditsEarned = 0;
+    
+    let minorGradePoints = 0;
+    let minorCreditsAttempted = 0;
+    let minorCreditsEarned = 0;
 
     for (const e of enrollments) {
       const semester = e.courseOffering.semester;
@@ -311,9 +355,15 @@ export class StudentRecordsService {
         semesterMap[semester] = {
           semester,
           courses: [],
-          totalGradePoints: 0,
-          totalCredits: 0,
-          creditsEarned: 0,
+          mainTotalGradePoints: 0,
+          mainTotalCredits: 0,
+          mainCreditsEarned: 0,
+          concentrationTotalGradePoints: 0,
+          concentrationTotalCredits: 0,
+          concentrationCreditsEarned: 0,
+          minorTotalGradePoints: 0,
+          minorTotalCredits: 0,
+          minorCreditsEarned: 0,
         };
       }
 
@@ -323,18 +373,40 @@ export class StudentRecordsService {
         credits,
         grade,
         gradePoints,
+        enrollmentType: e.enrollmentType,
       });
 
-      semesterMap[semester].totalGradePoints +=
-        gradePoints * credits;
-      semesterMap[semester].totalCredits += credits;
-
-      totalGradePoints += gradePoints * credits;
-      totalCreditsAttempted += credits;
-
-      if (gradePoints > 0) {
-        semesterMap[semester].creditsEarned += credits;
-        totalCreditsEarned += credits;
+      // Separate by enrollment type and exclude audit
+      if (e.enrollmentType === 'CREDIT') {
+        semesterMap[semester].mainTotalGradePoints += gradePoints * credits;
+        semesterMap[semester].mainTotalCredits += credits;
+        mainGradePoints += gradePoints * credits;
+        mainCreditsAttempted += credits;
+        
+        if (gradePoints > 0) {
+          semesterMap[semester].mainCreditsEarned += credits;
+          mainCreditsEarned += credits;
+        }
+      } else if (e.enrollmentType === 'CREDIT_CONCENTRATION') {
+        semesterMap[semester].concentrationTotalGradePoints += gradePoints * credits;
+        semesterMap[semester].concentrationTotalCredits += credits;
+        concentrationGradePoints += gradePoints * credits;
+        concentrationCreditsAttempted += credits;
+        
+        if (gradePoints > 0) {
+          semesterMap[semester].concentrationCreditsEarned += credits;
+          concentrationCreditsEarned += credits;
+        }
+      } else if (e.enrollmentType === 'CREDIT_MINOR') {
+        semesterMap[semester].minorTotalGradePoints += gradePoints * credits;
+        semesterMap[semester].minorTotalCredits += credits;
+        minorGradePoints += gradePoints * credits;
+        minorCreditsAttempted += credits;
+        
+        if (gradePoints > 0) {
+          semesterMap[semester].minorCreditsEarned += credits;
+          minorCreditsEarned += credits;
+        }
       }
     }
 
@@ -342,26 +414,66 @@ export class StudentRecordsService {
       (s: any) => ({
         semester: s.semester,
         courses: s.courses,
-        semesterCreditsEarned: s.creditsEarned,
-        semesterGPA:
-          s.totalCredits > 0
-            ? (
-                s.totalGradePoints / s.totalCredits
-              ).toFixed(2)
-            : "0.00",
+        main: {
+          semesterCreditsEarned: s.mainCreditsEarned,
+          semesterGPA:
+            s.mainTotalCredits > 0
+              ? (
+                  s.mainTotalGradePoints / s.mainTotalCredits
+                ).toFixed(2)
+              : "0.00",
+        },
+        concentration: {
+          semesterCreditsEarned: s.concentrationCreditsEarned,
+          semesterGPA:
+            s.concentrationTotalCredits > 0
+              ? (
+                  s.concentrationTotalGradePoints / s.concentrationTotalCredits
+                ).toFixed(2)
+              : "0.00",
+        },
+        minor: {
+          semesterCreditsEarned: s.minorCreditsEarned,
+          semesterGPA:
+            s.minorTotalCredits > 0
+              ? (
+                  s.minorTotalGradePoints / s.minorTotalCredits
+                ).toFixed(2)
+              : "0.00",
+        },
       }),
     );
 
-    const CGPA =
-      totalCreditsAttempted > 0
-        ? (totalGradePoints / totalCreditsAttempted).toFixed(2)
+    const mainCGPA =
+      mainCreditsAttempted > 0
+        ? (mainGradePoints / mainCreditsAttempted).toFixed(2)
+        : "0.00";
+    
+    const concentrationCGPA =
+      concentrationCreditsAttempted > 0
+        ? (concentrationGradePoints / concentrationCreditsAttempted).toFixed(2)
+        : "0.00";
+    
+    const minorCGPA =
+      minorCreditsAttempted > 0
+        ? (minorGradePoints / minorCreditsAttempted).toFixed(2)
         : "0.00";
 
     return {
       semesters,
       cumulative: {
-        totalCreditsEarned,
-        CGPA,
+        main: {
+          totalCreditsEarned: mainCreditsEarned,
+          CGPA: mainCGPA,
+        },
+        concentration: {
+          totalCreditsEarned: concentrationCreditsEarned,
+          CGPA: concentrationCGPA,
+        },
+        minor: {
+          totalCreditsEarned: minorCreditsEarned,
+          CGPA: minorCGPA,
+        },
       },
     };
   }

@@ -10,7 +10,7 @@ Your CSV file **must contain the following columns in this order:**
 | Column | Required | Description | Example |
 |--------|----------|-------------|---------|
 | name | ✅ Yes | User's full name | John Doe |
-| email | ✅ Yes | User's email address | john@university.edu |
+| email | ✅ Yes | User's email address | john@iitrpr.ac.in |
 | role | ✅ Yes | User role: STUDENT, INSTRUCTOR, or ADMIN | STUDENT |
 | entryNumber | ⚠️ Conditional | Entry number (required only for STUDENT role) | 2023CSB1289 |
 | department | ⚠️ Conditional | Department name (required only for INSTRUCTOR role) | Computer Science |
@@ -92,7 +92,7 @@ Prof. Neha Singh,neha@college.edu,INSTRUCTOR,,Mathematics
 name,email,role,entryNumber,department
 John Doe,john@college.edu,STUDENT,2023CSB0001,
 Jane Smith,jane@college.edu,INSTRUCTOR,,Computer Science
-Admin,admin@college.edu,ADMIN,,
+Admin,admin@iitrpr.ac.in,ADMIN,,
 ```
 
 ## Tips for Success

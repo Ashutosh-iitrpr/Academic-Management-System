@@ -72,6 +72,8 @@ export declare class AdminController {
         isActive: boolean;
         createdAt: Date;
     }[]>;
+    downloadStudentsData(res: any): Promise<void>;
+    downloadInstructorsData(res: any): Promise<void>;
     createUser(dto: {
         name: string;
         email: string;
@@ -187,6 +189,7 @@ export declare class AdminController {
         createdAt: Date;
         code: string;
         credits: number;
+        ltpsc: string | null;
         description: string | null;
     }>;
 }

@@ -14,4 +14,11 @@ export class CreateCourseDto {
   @IsInt()
   @Min(1)
   credits: number;
+
+  @IsString()
+  @IsNotEmpty()
+  @Matches(/^\d+-\d+-\d+-\d+$/, {
+    message: "LTPSC must be in format like 3-0-0-3 (Lecture-Tutorial-Practical-Self Study)",
+  })
+  ltpsc: string;
 }

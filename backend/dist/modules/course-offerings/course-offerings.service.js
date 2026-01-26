@@ -66,6 +66,7 @@ let CourseOfferingsService = class CourseOfferingsService {
             where: {
                 status: {
                     in: [
+                        client_1.CourseOfferingStatus.PENDING,
                         client_1.CourseOfferingStatus.ENROLLING,
                         client_1.CourseOfferingStatus.COMPLETED,
                     ],
@@ -148,6 +149,33 @@ let CourseOfferingsService = class CourseOfferingsService {
         }
         if (!course) {
             throw new common_2.NotFoundException("Course not found. Please create a new course proposal first.");
+        }
+        const existing = await this.prisma.courseOffering.findFirst({
+            where: {
+                instructorId,
+                courseId: course.id,
+                semester: dto.semester,
+                status: {
+                    in: [
+                        client_1.CourseOfferingStatus.PENDING,
+                        client_1.CourseOfferingStatus.ENROLLING,
+                        client_1.CourseOfferingStatus.COMPLETED,
+                    ],
+                },
+            },
+        });
+        if (existing) {
+            throw new common_2.ConflictException("You already have an offering request for this course and semester");
+        }
+        const approvedInSemester = await this.prisma.courseOffering.findFirst({
+            where: {
+                courseId: course.id,
+                semester: dto.semester,
+                status: client_1.CourseOfferingStatus.ENROLLING,
+            },
+        });
+        if (approvedInSemester) {
+            throw new common_2.ConflictException("An approved offering already exists for this course and semester");
         }
         return this.prisma.courseOffering.create({
             data: {

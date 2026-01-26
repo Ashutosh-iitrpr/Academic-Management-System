@@ -80,10 +80,45 @@ async requestEnrollment(
     );
   }
 
-  // 5️⃣ CREDIT LIMIT CHECK (per semester)
+  // 4️⃣b Validate concentration/minor exclusivity
+  if (
+    dto.enrollmentType === 'CREDIT_CONCENTRATION' ||
+    dto.enrollmentType === 'CREDIT_MINOR'
+  ) {
+    const oppositeType =
+      dto.enrollmentType === 'CREDIT_CONCENTRATION'
+        ? 'CREDIT_MINOR'
+        : 'CREDIT_CONCENTRATION';
+
+    const hasOpposite = await this.prisma.enrollment.findFirst({
+      where: {
+        studentId,
+        enrollmentType: oppositeType,
+        status: {
+          in: [
+            EnrollmentStatus.PENDING_INSTRUCTOR,
+            EnrollmentStatus.ENROLLED,
+            EnrollmentStatus.AUDIT,
+            EnrollmentStatus.COMPLETED,
+          ],
+        },
+      },
+    });
+
+    if (hasOpposite) {
+      throw new BadRequestException(
+        `Cannot request ${dto.enrollmentType.replace('CREDIT_', '').toLowerCase()}. ` +
+        `Student already has ${oppositeType.replace('CREDIT_', '').toLowerCase()} enrollments`,
+      );
+    }
+  }
+
+  // 5️⃣ CREDIT LIMIT CHECK (per semester, only for CREDIT type)
+  // Concentration and Minor courses don't count against the credit limit
   const activeEnrollments = await this.prisma.enrollment.findMany({
     where: {
       studentId,
+      enrollmentType: 'CREDIT',
       status: EnrollmentStatus.ENROLLED,
       courseOffering: {
         semester: offering.semester,

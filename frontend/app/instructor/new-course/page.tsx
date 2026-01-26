@@ -34,6 +34,7 @@ const InstructorNewCourse = () => {
     code: '',
     name: '',
     credits: '',
+    ltpsc: '',
     description: '',
   });
 
@@ -55,7 +56,7 @@ const InstructorNewCourse = () => {
   }, []);
 
   const handleOpenDialog = () => {
-    setFormData({ code: '', name: '', credits: '', description: '' });
+    setFormData({ code: '', name: '', credits: '', ltpsc: '', description: '' });
     setOpenDialog(true);
   };
 
@@ -69,7 +70,7 @@ const InstructorNewCourse = () => {
 
   const handleSubmit = async () => {
     try {
-      if (!formData.code || !formData.name || !formData.credits) {
+      if (!formData.code || !formData.name || !formData.credits || !formData.ltpsc) {
         toast.error('Please fill all required fields');
         return;
       }
@@ -80,11 +81,18 @@ const InstructorNewCourse = () => {
         return;
       }
 
+      // Validate LTPSC format
+      if (!/^\d+-\d+-\d+-\d+$/.test(formData.ltpsc)) {
+        toast.error('LTPSC format must be like 3-0-0-3');
+        return;
+      }
+
       setSubmitting(true);
       const payload: CreateCourseProposalDto = {
         code: formData.code.trim(),
         name: formData.name.trim(),
         credits: creditsNum,
+        ltpsc: formData.ltpsc.trim(),
         description: formData.description.trim() || undefined,
       };
 
@@ -187,6 +195,17 @@ const InstructorNewCourse = () => {
                         </Typography>
                       </Box>
 
+                      {proposal.ltpsc && (
+                        <Box sx={{ mb: 2 }}>
+                          <Typography variant="caption" sx={{ color: '#999', fontWeight: 600 }}>
+                            LTPSC
+                          </Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {proposal.ltpsc}
+                          </Typography>
+                        </Box>
+                      )}
+
                       {proposal.description && (
                         <Box sx={{ mb: 2 }}>
                           <Typography variant="caption" sx={{ color: '#999', fontWeight: 600 }}>
@@ -248,6 +267,15 @@ const InstructorNewCourse = () => {
               value={formData.credits}
               onChange={(e) => handleInputChange('credits', e.target.value)}
               inputProps={{ min: 1 }}
+              required
+            />
+            <TextField
+              label="LTPSC"
+              fullWidth
+              placeholder="e.g., 3-0-0-3"
+              value={formData.ltpsc}
+              onChange={(e) => handleInputChange('ltpsc', e.target.value)}
+              helperText="Format: Lecture-Tutorial-Practical-Self Study (e.g., 3-0-0-3)"
               required
             />
             <TextField

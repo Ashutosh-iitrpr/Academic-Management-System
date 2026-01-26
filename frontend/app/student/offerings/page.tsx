@@ -23,6 +23,13 @@ import {
   CircularProgress,
   Alert,
   InputAdornment,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
 } from '@mui/material';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import ProtectedRoute from '@/lib/routes/ProtectedRoute';
@@ -70,6 +77,9 @@ const StudentOfferingsPage = () => {
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'FLOATED' | 'ENROLLING' | 'COMPLETED'>('ALL');
   const [enrollmentInProgress, setEnrollmentInProgress] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [enrollmentTypeDialogOpen, setEnrollmentTypeDialogOpen] = useState(false);
+  const [selectedOfferingForEnrollment, setSelectedOfferingForEnrollment] = useState<CourseOfferingDisplay | null>(null);
+  const [selectedEnrollmentType, setSelectedEnrollmentType] = useState<'CREDIT' | 'CREDIT_CONCENTRATION' | 'CREDIT_MINOR'>('CREDIT');
 
   useEffect(() => {
     const fetchOfferings = async () => {
@@ -164,11 +174,20 @@ const StudentOfferingsPage = () => {
     return filtered;
   }, [offerings, statusFilter, searchQuery]);
 
-  const handleEnroll = async (offeringId: string) => {
+  const handleEnrollClick = (offering: CourseOfferingDisplay) => {
+    setSelectedOfferingForEnrollment(offering);
+    setSelectedEnrollmentType('CREDIT');
+    setEnrollmentTypeDialogOpen(true);
+  };
+
+  const handleEnrollmentTypeConfirm = async () => {
+    if (!selectedOfferingForEnrollment) return;
+    
     try {
       setEnrollmentInProgress(true);
-      await studentApi.requestEnrollment(offeringId, 'CREDIT');
-      toast.success('Successfully enrolled in course');
+      await studentApi.requestEnrollment(selectedOfferingForEnrollment.id, selectedEnrollmentType);
+      toast.success(`Successfully enrolled in ${selectedOfferingForEnrollment.courseName} as ${selectedEnrollmentType.replace('CREDIT_', '').replace('CREDIT', 'Credit')}`);
+      setEnrollmentTypeDialogOpen(false);
       // Refresh the data
       const offeringsData = await studentApi.getAvailableOfferings();
       const recordData = await studentApi.getStudentRecord();
@@ -418,7 +437,7 @@ const StudentOfferingsPage = () => {
                             variant="contained"
                             startIcon={<AddIcon />}
                             disabled={!offering.canEnroll || enrollmentInProgress}
-                            onClick={() => handleEnroll(offering.id)}
+                            onClick={() => handleEnrollClick(offering)}
                             sx={{
                               backgroundColor: offering.canEnroll ? '#4caf50' : '#cccccc',
                               color: offering.canEnroll ? 'white' : '#999999',
@@ -445,6 +464,100 @@ const StudentOfferingsPage = () => {
               </Box>
             </Card>
           )}
+
+        {/* Enrollment Type Selection Dialog */}
+        <Dialog open={enrollmentTypeDialogOpen} onClose={() => setEnrollmentTypeDialogOpen(false)} maxWidth="sm" fullWidth>
+          <DialogTitle sx={{ fontWeight: 700 }}>
+            Select Enrollment Type
+          </DialogTitle>
+          <DialogContent sx={{ pt: 3 }}>
+            {selectedOfferingForEnrollment && (
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                  {selectedOfferingForEnrollment.courseCode} - {selectedOfferingForEnrollment.courseName}
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#666' }}>
+                  Credits: {selectedOfferingForEnrollment.credits} | Instructor: {selectedOfferingForEnrollment.instructor}
+                </Typography>
+              </Box>
+            )}
+
+            <FormControl fullWidth>
+              <RadioGroup
+                value={selectedEnrollmentType}
+                onChange={(e) => setSelectedEnrollmentType(e.target.value as any)}
+              >
+                <FormControlLabel
+                  value="CREDIT"
+                  control={<Radio />}
+                  label={
+                    <Box>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        Credit (Main Course)
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: '#666' }}>
+                        Regular course enrollment, counts towards credit limit and main GPA
+                      </Typography>
+                    </Box>
+                  }
+                  sx={{ mb: 2, alignItems: 'flex-start' }}
+                />
+                <FormControlLabel
+                  value="CREDIT_CONCENTRATION"
+                  control={<Radio />}
+                  label={
+                    <Box>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        Concentration Course
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: '#666' }}>
+                        Specialization course, separate GPA calculation, requires instructor approval
+                      </Typography>
+                    </Box>
+                  }
+                  sx={{ mb: 2, alignItems: 'flex-start' }}
+                />
+                <FormControlLabel
+                  value="CREDIT_MINOR"
+                  control={<Radio />}
+                  label={
+                    <Box>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        Minor Course
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: '#666' }}>
+                        Minor specialization, separate GPA calculation, requires instructor approval
+                      </Typography>
+                    </Box>
+                  }
+                  sx={{ alignItems: 'flex-start' }}
+                />
+              </RadioGroup>
+            </FormControl>
+
+            <Alert severity="info" sx={{ mt: 3 }}>
+              <Typography variant="body2">
+                <strong>Note:</strong> You can choose either Concentration OR Minor, not both. Main courses don't count against this restriction.
+              </Typography>
+            </Alert>
+          </DialogContent>
+          <DialogActions sx={{ p: 2 }}>
+            <Button onClick={() => setEnrollmentTypeDialogOpen(false)} sx={{ color: '#666' }}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleEnrollmentTypeConfirm}
+              variant="contained"
+              sx={{
+                backgroundColor: '#8B3A3A',
+                '&:hover': { backgroundColor: '#6B2A2A' },
+              }}
+              disabled={enrollmentInProgress}
+            >
+              {enrollmentInProgress ? <CircularProgress size={20} /> : 'Confirm Enrollment'}
+            </Button>
+          </DialogActions>
+        </Dialog>
         </Box>
       </DashboardLayout>
     </ProtectedRoute>

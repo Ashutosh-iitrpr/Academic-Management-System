@@ -37,6 +37,7 @@ import InfoIcon from '@mui/icons-material/Info';
 const InstructorOfferings = () => {
   const [loading, setLoading] = useState(true);
   const [offerings, setOfferings] = useState<CourseOffering[]>([]);
+  const [allOfferingCourseCodes, setAllOfferingCourseCodes] = useState<Set<string>>(new Set());
   const [selectedOffering, setSelectedOffering] = useState<CourseOffering | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [dialogType, setDialogType] = useState<'view' | 'request' | 'finalize'>('view');
@@ -68,8 +69,13 @@ const InstructorOfferings = () => {
   const fetchOfferings = async () => {
     try {
       setLoading(true);
-      const data = await instructorApi.getCourseOfferings();
-      setOfferings(data);
+      const [mine, all] = await Promise.all([
+        instructorApi.getCourseOfferings(),
+        instructorApi.getAllCourseOfferings(),
+      ]);
+      setOfferings(mine);
+      const codes = new Set<string>(all.map(o => o.course.code.toUpperCase()));
+      setAllOfferingCourseCodes(codes);
     } catch (error: any) {
       console.error('Failed to fetch offerings:', error);
       toast.error(error.response?.data?.message || 'Failed to fetch offerings');
@@ -93,6 +99,8 @@ const InstructorOfferings = () => {
     setOpenDialog(true);
     // Fetch semesters when opening dialog
     loadSemesters();
+    // Refresh offerings to ensure latest duplicate check
+    fetchOfferings();
   };
 
   const loadSemesters = async () => {
@@ -158,6 +166,13 @@ const InstructorOfferings = () => {
 
       if (!formData.allowedBranches || formData.allowedBranches.length === 0) {
         toast.error('Select at least one allowed branch');
+        return;
+      }
+
+      // Prevent duplicate requests if any offering (pending/enrolling/completed) exists for this course
+      const courseCodeUpper = formData.courseCode.trim().toUpperCase();
+      if (allOfferingCourseCodes.has(courseCodeUpper)) {
+        toast.error('An offering for this course already exists or is pending');
         return;
       }
 
