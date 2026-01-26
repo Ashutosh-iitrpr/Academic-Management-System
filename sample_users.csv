@@ -1,8 +1,11 @@
 name,email,role,entryNumber,department
-John Doe,john.doe@iitrpr.ac.in,STUDENT,2023CSB0001,
-Jane Smith,jane.smith@iitrpr.ac.in,STUDENT,2023CSE0002,
-Alice Johnson,alice.johnson@iitrpr.ac.in,STUDENT,2023ECE0003,
-Bob Wilson,bob.wilson@iitrpr.ac.in,INSTRUCTOR,,Computer Science
-Carol Davis,carol.davis@iitrpr.ac.in,INSTRUCTOR,,Electrical Engineering
-David Brown,david.brown@iitrpr.ac.in,INSTRUCTOR,,Mathematics
-Eve Martinez,eve.martinez@iitrpr.ac.in,ADMIN,,
+Sanjana Verma,2023csb3011+student11@iitrpr.ac.in,STUDENT,2023CSB3011,
+Nikhil Shah,2023csb3012+student12@iitrpr.ac.in,STUDENT,2023CSB3012,
+Tanvi Gupta,2023csb3013+student13@iitrpr.ac.in,STUDENT,2023CSB3013,
+Akash Jain,2023csb3014+student14@iitrpr.ac.in,STUDENT,2023CSB3014,
+Ishita Banerjee,2023csb3015+student15@iitrpr.ac.in,STUDENT,2023CSB3015,
+Vivek Kumar,2023csb3016+student16@iitrpr.ac.in,STUDENT,2023CSB3016,
+Neha Pillai,2023csb3017+student17@iitrpr.ac.in,STUDENT,2023CSB3017,
+Sahil Malik,2023csb3018+student18@iitrpr.ac.in,STUDENT,2023CSB3018,
+Riya Saxena,2023csb3019+student19@iitrpr.ac.in,STUDENT,2023CSB3019,
+Harsh Mittal,2023csb3020+student20@iitrpr.ac.in,STUDENT,2023CSB3020,

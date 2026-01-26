@@ -213,9 +213,9 @@ export declare class AdminController {
         status: import("@prisma/client").$Enums.EnrollmentStatus;
         approvedAt: Date | null;
         completedAt: Date | null;
+        studentId: string;
         courseOfferingId: string;
         enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
-        studentId: string;
         advisorId: string | null;
         grade: import("@prisma/client").$Enums.Grade | null;
         source: import("@prisma/client").$Enums.EnrollmentSource;

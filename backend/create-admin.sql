@@ -2,7 +2,7 @@
 INSERT INTO "User" (id, email, name, role, "isActive", "entryNumber", "createdAt")
 VALUES (
   gen_random_uuid(),
-  'admin@iitrpr.ac.in',
+  '2023csb1101+admin@iitrpr.ac.in',
   'Admin User',
   'ADMIN',
   true,

@@ -21,7 +21,14 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
   };
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: '#fafafa' }}>
+    <Box
+      sx={{
+        display: 'flex',
+        minHeight: '100vh',
+        backgroundColor: '#fafafa',
+        paddingLeft: isMobile ? 0 : '280px', // reserve space for fixed sidebar on desktop
+      }}
+    >
       {/* Sidebar */}
       {!isMobile && <Sidebar />}
       {isMobile && <Sidebar open={mobileOpen} onClose={() => setMobileOpen(false)} />}
@@ -32,7 +39,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, page
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
-          marginLeft: isMobile ? 0 : '280px',
+          minWidth: 0,
         }}
       >
         {/* Topbar - Sticky Header */}
