@@ -14,19 +14,23 @@ const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../../prisma/prisma.service");
 const otp_util_1 = require("../../utils/otp.util");
 const mail_util_1 = require("../../utils/mail.util");
+const email_service_1 = require("../../common/services/email.service");
 const jwt_1 = require("@nestjs/jwt");
 let AuthService = class AuthService {
     prisma;
     jwtService;
-    constructor(prisma, jwtService) {
+    emailService;
+    constructor(prisma, jwtService, emailService) {
         this.prisma = prisma;
         this.jwtService = jwtService;
+        this.emailService = emailService;
     }
     async requestOtp(email) {
         const user = await this.prisma.user.findUnique({
             where: { email },
             select: {
                 id: true,
+                name: true,
                 email: true,
                 isActive: true,
             },
@@ -47,7 +51,7 @@ let AuthService = class AuthService {
                 expiresAt,
             },
         });
-        await (0, mail_util_1.sendOtpEmail)(user.email, otp);
+        await (0, mail_util_1.sendOtpEmail)(user.email, otp, this.emailService, user.name);
         return {
             message: "OTP sent to registered email",
         };
@@ -123,6 +127,7 @@ exports.AuthService = AuthService;
 exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        jwt_1.JwtService])
+        jwt_1.JwtService,
+        email_service_1.EmailService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

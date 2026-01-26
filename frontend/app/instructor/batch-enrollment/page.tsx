@@ -42,20 +42,12 @@ import InfoIcon from '@mui/icons-material/Info';
 
 // Branch codes - these should match the backend validation
 const BRANCH_CODES = [
-  { code: 'CSB', name: 'Computer Science & Biosciences' },
-  { code: 'CEB', name: 'Computer Engineering & Biology' },
-  { code: 'CSE', name: 'Computer Science Engineering' },
+  { code: 'CSB', name: 'Computer Science Engineering' },
+  { code: 'CEB', name: 'Civil Engineering' },
   { code: 'ECE', name: 'Electronics & Communication Engineering' },
-  { code: 'EEB', name: 'Electronics Engineering & Biology' },
-  { code: 'MEE', name: 'Mechanical Engineering' },
-  { code: 'MEB', name: 'Mechanical Engineering & Biology' },
-  { code: 'CEE', name: 'Civil Engineering' },
-  { code: 'EEE', name: 'Electrical Engineering' },
+  { code: 'EEB', name: 'Electronics Engineering' },
+  { code: 'MEB', name: 'Mechanical Engineering' },
   { code: 'CHE', name: 'Chemical Engineering' },
-  { code: 'BIO', name: 'Biotechnology' },
-  { code: 'MAT', name: 'Mathematics & Computing' },
-  { code: 'PHY', name: 'Engineering Physics' },
-  { code: 'CHM', name: 'Chemistry' },
 ];
 
 // Helper function to get branch name

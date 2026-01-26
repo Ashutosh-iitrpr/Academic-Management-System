@@ -25,9 +25,9 @@ import EmailIcon from '@mui/icons-material/Email';
 import LockIcon from '@mui/icons-material/Lock';
 
 // Demo Credentials for Testing:
-// Admin: admin@iitrpr.ac.in | OTP: Check backend console after requesting OTP
-// Instructor: instructor@iitrpr.ac.in | OTP: Check backend console
-// Student: student@iitrpr.ac.in | OTP: Check backend console
+// Admin: admin@iitrpr.ac.in | OTP will be sent to email
+// Instructor: instructor@iitrpr.ac.in | OTP will be sent to email
+// Student: student@iitrpr.ac.in | OTP will be sent to email
 
 const emailSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -83,7 +83,7 @@ export default function LoginPage() {
 
       setEmail(data.email);
       setStep(1);
-      toast.success('OTP sent to your email. Check backend console for OTP.');
+      toast.success('OTP sent to your email address. Please check your inbox.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
       toast.error(err instanceof Error ? err.message : 'Failed to send OTP');

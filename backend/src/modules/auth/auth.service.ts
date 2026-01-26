@@ -7,6 +7,7 @@ import {
 import { PrismaService } from "../../prisma/prisma.service";
 import { generateOtp, hashOtp } from "../../utils/otp.util";
 import { sendOtpEmail } from "../../utils/mail.util";
+import { EmailService } from "../../common/services/email.service";
 import { JwtService } from "@nestjs/jwt";
 
 @Injectable()
@@ -14,6 +15,7 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private emailService: EmailService,
   ) {}
 
   // =========================
@@ -24,6 +26,7 @@ export class AuthService {
       where: { email },
       select: {
         id: true,
+        name: true,
         email: true,
         isActive: true,
       },
@@ -50,8 +53,8 @@ export class AuthService {
       },
     });
 
-    // For now this logs to console
-    await sendOtpEmail(user.email, otp);
+    // Send OTP via email using EmailService
+    await sendOtpEmail(user.email, otp, this.emailService, user.name);
 
     return {
       message: "OTP sent to registered email",
