@@ -3,6 +3,7 @@ import {
   IsOptional,
   IsString,
   Matches,
+  IsBoolean,
 } from "class-validator";
 
 export class UpdateUserDto {
@@ -23,4 +24,8 @@ export class UpdateUserDto {
   @IsOptional()
   @IsString()
   department?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isFacultyAdvisor?: boolean;
 }

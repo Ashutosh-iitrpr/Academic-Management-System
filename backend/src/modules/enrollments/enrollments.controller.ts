@@ -128,8 +128,41 @@ export class EnrollmentsController {
     );
   }
 
+  // ---------- FACULTY ADVISOR ----------
+  @Get("advisor/enrollments/pending")
+  @Roles("INSTRUCTOR")
+  getPendingEnrollmentsForAdvisor(@Req() req) {
+    return this.enrollmentsService.getPendingForAdvisor(
+      req.user.userId,
+    );
+  }
 
-    // ---------- STUDENT ACTIONS ----------
+  @Patch("advisor/enrollments/:id/approve")
+  @Roles("INSTRUCTOR")
+  approveEnrollmentAsAdvisor(
+    @Param("id") id: string,
+    @Req() req,
+  ) {
+    return this.enrollmentsService.approveEnrollmentAsAdvisor(
+      req.user.userId,
+      id,
+    );
+  }
+
+  @Patch("advisor/enrollments/:id/reject")
+  @Roles("INSTRUCTOR")
+  rejectEnrollmentAsAdvisor(
+    @Param("id") id: string,
+    @Req() req,
+  ) {
+    return this.enrollmentsService.rejectEnrollmentAsAdvisor(
+      req.user.userId,
+      id,
+    );
+  }
+
+
+  // ---------- STUDENT ACTIONS ----------
 
   @Patch("student/enrollments/:id/drop")
   @Roles("STUDENT")

@@ -9,55 +9,57 @@ export declare class EnrollmentsService {
     constructor(prisma: PrismaService, academicCalendarService: AcademicCalendarService);
     requestEnrollment(studentId: string, dto: RequestEnrollmentDto): Promise<{
         id: string;
-        status: import("@prisma/client").$Enums.EnrollmentStatus;
-        enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
-        grade: import("@prisma/client").$Enums.Grade | null;
-        completedAt: Date | null;
-        source: import("@prisma/client").$Enums.EnrollmentSource;
         createdAt: Date;
+        status: import("@prisma/client").$Enums.EnrollmentStatus;
         approvedAt: Date | null;
-        studentId: string;
+        completedAt: Date | null;
         courseOfferingId: string;
+        enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
+        studentId: string;
+        advisorId: string | null;
+        grade: import("@prisma/client").$Enums.Grade | null;
+        source: import("@prisma/client").$Enums.EnrollmentSource;
     }>;
     getPendingForInstructor(instructorId: string): Promise<({
+        courseOffering: {
+            course: {
+                name: string;
+                id: string;
+                createdAt: Date;
+                code: string;
+                credits: number;
+                ltpsc: string | null;
+                description: string | null;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            courseId: string;
+            semester: string;
+            timeSlot: string;
+            allowedBranches: string[];
+            instructorId: string;
+            status: import("@prisma/client").$Enums.CourseOfferingStatus;
+            approvedAt: Date | null;
+            completedAt: Date | null;
+        };
         student: {
             name: string;
             email: string;
             entryNumber: string | null;
         };
-        courseOffering: {
-            course: {
-                id: string;
-                createdAt: Date;
-                name: string;
-                code: string;
-                credits: number;
-                description: string | null;
-                ltpsc: string | null;
-            };
-        } & {
-            id: string;
-            status: import("@prisma/client").$Enums.CourseOfferingStatus;
-            completedAt: Date | null;
-            createdAt: Date;
-            approvedAt: Date | null;
-            courseId: string;
-            instructorId: string;
-            semester: string;
-            timeSlot: string;
-            allowedBranches: string[];
-        };
     } & {
         id: string;
-        status: import("@prisma/client").$Enums.EnrollmentStatus;
-        enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
-        grade: import("@prisma/client").$Enums.Grade | null;
-        completedAt: Date | null;
-        source: import("@prisma/client").$Enums.EnrollmentSource;
         createdAt: Date;
+        status: import("@prisma/client").$Enums.EnrollmentStatus;
         approvedAt: Date | null;
-        studentId: string;
+        completedAt: Date | null;
         courseOfferingId: string;
+        enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
+        studentId: string;
+        advisorId: string | null;
+        grade: import("@prisma/client").$Enums.Grade | null;
+        source: import("@prisma/client").$Enums.EnrollmentSource;
     })[]>;
     getOfferingEnrollmentsForInstructor(instructorId: string, courseOfferingId: string): Promise<({
         student: {
@@ -67,39 +69,42 @@ export declare class EnrollmentsService {
         };
     } & {
         id: string;
-        status: import("@prisma/client").$Enums.EnrollmentStatus;
-        enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
-        grade: import("@prisma/client").$Enums.Grade | null;
-        completedAt: Date | null;
-        source: import("@prisma/client").$Enums.EnrollmentSource;
         createdAt: Date;
+        status: import("@prisma/client").$Enums.EnrollmentStatus;
         approvedAt: Date | null;
-        studentId: string;
+        completedAt: Date | null;
         courseOfferingId: string;
+        enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
+        studentId: string;
+        advisorId: string | null;
+        grade: import("@prisma/client").$Enums.Grade | null;
+        source: import("@prisma/client").$Enums.EnrollmentSource;
     })[]>;
     approveEnrollment(instructorId: string, enrollmentId: string): Promise<{
         id: string;
-        status: import("@prisma/client").$Enums.EnrollmentStatus;
-        enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
-        grade: import("@prisma/client").$Enums.Grade | null;
-        completedAt: Date | null;
-        source: import("@prisma/client").$Enums.EnrollmentSource;
         createdAt: Date;
+        status: import("@prisma/client").$Enums.EnrollmentStatus;
         approvedAt: Date | null;
-        studentId: string;
+        completedAt: Date | null;
         courseOfferingId: string;
+        enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
+        studentId: string;
+        advisorId: string | null;
+        grade: import("@prisma/client").$Enums.Grade | null;
+        source: import("@prisma/client").$Enums.EnrollmentSource;
     }>;
     rejectEnrollment(instructorId: string, enrollmentId: string): Promise<{
         id: string;
-        status: import("@prisma/client").$Enums.EnrollmentStatus;
-        enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
-        grade: import("@prisma/client").$Enums.Grade | null;
-        completedAt: Date | null;
-        source: import("@prisma/client").$Enums.EnrollmentSource;
         createdAt: Date;
+        status: import("@prisma/client").$Enums.EnrollmentStatus;
         approvedAt: Date | null;
-        studentId: string;
+        completedAt: Date | null;
         courseOfferingId: string;
+        enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
+        studentId: string;
+        advisorId: string | null;
+        grade: import("@prisma/client").$Enums.Grade | null;
+        source: import("@prisma/client").$Enums.EnrollmentSource;
     }>;
     bulkActionEnrollments(instructorId: string, dto: {
         enrollmentIds: string[];
@@ -109,37 +114,110 @@ export declare class EnrollmentsService {
         count: number;
         action: "approve" | "reject";
     }>;
+    getPendingForAdvisor(advisorId: string): Promise<({
+        courseOffering: {
+            course: {
+                name: string;
+                id: string;
+                createdAt: Date;
+                code: string;
+                credits: number;
+                ltpsc: string | null;
+                description: string | null;
+            };
+            instructor: {
+                name: string;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            courseId: string;
+            semester: string;
+            timeSlot: string;
+            allowedBranches: string[];
+            instructorId: string;
+            status: import("@prisma/client").$Enums.CourseOfferingStatus;
+            approvedAt: Date | null;
+            completedAt: Date | null;
+        };
+        student: {
+            name: string;
+            email: string;
+            entryNumber: string | null;
+            id: string;
+        };
+    } & {
+        id: string;
+        createdAt: Date;
+        status: import("@prisma/client").$Enums.EnrollmentStatus;
+        approvedAt: Date | null;
+        completedAt: Date | null;
+        courseOfferingId: string;
+        enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
+        studentId: string;
+        advisorId: string | null;
+        grade: import("@prisma/client").$Enums.Grade | null;
+        source: import("@prisma/client").$Enums.EnrollmentSource;
+    })[]>;
+    approveEnrollmentAsAdvisor(advisorId: string, enrollmentId: string): Promise<{
+        id: string;
+        createdAt: Date;
+        status: import("@prisma/client").$Enums.EnrollmentStatus;
+        approvedAt: Date | null;
+        completedAt: Date | null;
+        courseOfferingId: string;
+        enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
+        studentId: string;
+        advisorId: string | null;
+        grade: import("@prisma/client").$Enums.Grade | null;
+        source: import("@prisma/client").$Enums.EnrollmentSource;
+    }>;
+    rejectEnrollmentAsAdvisor(advisorId: string, enrollmentId: string): Promise<{
+        id: string;
+        createdAt: Date;
+        status: import("@prisma/client").$Enums.EnrollmentStatus;
+        approvedAt: Date | null;
+        completedAt: Date | null;
+        courseOfferingId: string;
+        enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
+        studentId: string;
+        advisorId: string | null;
+        grade: import("@prisma/client").$Enums.Grade | null;
+        source: import("@prisma/client").$Enums.EnrollmentSource;
+    }>;
     dropEnrollment(studentId: string, enrollmentId: string): Promise<{
         id: string;
-        status: import("@prisma/client").$Enums.EnrollmentStatus;
-        enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
-        grade: import("@prisma/client").$Enums.Grade | null;
-        completedAt: Date | null;
-        source: import("@prisma/client").$Enums.EnrollmentSource;
         createdAt: Date;
+        status: import("@prisma/client").$Enums.EnrollmentStatus;
         approvedAt: Date | null;
-        studentId: string;
+        completedAt: Date | null;
         courseOfferingId: string;
+        enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
+        studentId: string;
+        advisorId: string | null;
+        grade: import("@prisma/client").$Enums.Grade | null;
+        source: import("@prisma/client").$Enums.EnrollmentSource;
     }>;
     auditEnrollment(studentId: string, enrollmentId: string): Promise<{
         id: string;
-        status: import("@prisma/client").$Enums.EnrollmentStatus;
-        enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
-        grade: import("@prisma/client").$Enums.Grade | null;
-        completedAt: Date | null;
-        source: import("@prisma/client").$Enums.EnrollmentSource;
         createdAt: Date;
+        status: import("@prisma/client").$Enums.EnrollmentStatus;
         approvedAt: Date | null;
-        studentId: string;
+        completedAt: Date | null;
         courseOfferingId: string;
+        enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
+        studentId: string;
+        advisorId: string | null;
+        grade: import("@prisma/client").$Enums.Grade | null;
+        source: import("@prisma/client").$Enums.EnrollmentSource;
     }>;
     createEnrollmentTrigger(instructorId: string, dto: CreateEnrollmentTriggerDto): Promise<{
         trigger: {
             id: string;
-            enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
             createdAt: Date;
-            courseOfferingId: string;
             instructorId: string;
+            courseOfferingId: string;
+            enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
             branchCode: string;
             batchYear: number;
         };
@@ -188,15 +266,16 @@ export declare class EnrollmentsService {
                 };
             } & {
                 id: string;
-                status: import("@prisma/client").$Enums.EnrollmentStatus;
-                enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
-                grade: import("@prisma/client").$Enums.Grade | null;
-                completedAt: Date | null;
-                source: import("@prisma/client").$Enums.EnrollmentSource;
                 createdAt: Date;
+                status: import("@prisma/client").$Enums.EnrollmentStatus;
                 approvedAt: Date | null;
-                studentId: string;
+                completedAt: Date | null;
                 courseOfferingId: string;
+                enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
+                studentId: string;
+                advisorId: string | null;
+                grade: import("@prisma/client").$Enums.Grade | null;
+                source: import("@prisma/client").$Enums.EnrollmentSource;
             })[];
             enrolled: ({
                 student: {
@@ -206,15 +285,16 @@ export declare class EnrollmentsService {
                 };
             } & {
                 id: string;
-                status: import("@prisma/client").$Enums.EnrollmentStatus;
-                enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
-                grade: import("@prisma/client").$Enums.Grade | null;
-                completedAt: Date | null;
-                source: import("@prisma/client").$Enums.EnrollmentSource;
                 createdAt: Date;
+                status: import("@prisma/client").$Enums.EnrollmentStatus;
                 approvedAt: Date | null;
-                studentId: string;
+                completedAt: Date | null;
                 courseOfferingId: string;
+                enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
+                studentId: string;
+                advisorId: string | null;
+                grade: import("@prisma/client").$Enums.Grade | null;
+                source: import("@prisma/client").$Enums.EnrollmentSource;
             })[];
             audit: ({
                 student: {
@@ -224,15 +304,16 @@ export declare class EnrollmentsService {
                 };
             } & {
                 id: string;
-                status: import("@prisma/client").$Enums.EnrollmentStatus;
-                enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
-                grade: import("@prisma/client").$Enums.Grade | null;
-                completedAt: Date | null;
-                source: import("@prisma/client").$Enums.EnrollmentSource;
                 createdAt: Date;
+                status: import("@prisma/client").$Enums.EnrollmentStatus;
                 approvedAt: Date | null;
-                studentId: string;
+                completedAt: Date | null;
                 courseOfferingId: string;
+                enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
+                studentId: string;
+                advisorId: string | null;
+                grade: import("@prisma/client").$Enums.Grade | null;
+                source: import("@prisma/client").$Enums.EnrollmentSource;
             })[];
             dropped: ({
                 student: {
@@ -242,15 +323,16 @@ export declare class EnrollmentsService {
                 };
             } & {
                 id: string;
-                status: import("@prisma/client").$Enums.EnrollmentStatus;
-                enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
-                grade: import("@prisma/client").$Enums.Grade | null;
-                completedAt: Date | null;
-                source: import("@prisma/client").$Enums.EnrollmentSource;
                 createdAt: Date;
+                status: import("@prisma/client").$Enums.EnrollmentStatus;
                 approvedAt: Date | null;
-                studentId: string;
+                completedAt: Date | null;
                 courseOfferingId: string;
+                enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
+                studentId: string;
+                advisorId: string | null;
+                grade: import("@prisma/client").$Enums.Grade | null;
+                source: import("@prisma/client").$Enums.EnrollmentSource;
             })[];
         };
         stats: {

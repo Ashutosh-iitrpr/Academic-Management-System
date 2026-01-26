@@ -37,7 +37,7 @@ export interface CourseOffering {
 export interface Enrollment {
   id: string;
   courseOfferingId: string;
-  status: 'PENDING_INSTRUCTOR' | 'ENROLLED' | 'REJECTED' | 'DROPPED' | 'AUDIT' | 'COMPLETED';
+  status: 'PENDING_INSTRUCTOR' | 'PENDING_ADVISOR' | 'ENROLLED' | 'REJECTED' | 'DROPPED' | 'AUDIT' | 'COMPLETED';
   enrollmentType: 'CREDIT' | 'CREDIT_CONCENTRATION' | 'CREDIT_MINOR';
   grade?: string;
   courseOffering?: CourseOffering;

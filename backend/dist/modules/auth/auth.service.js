@@ -92,6 +92,7 @@ let AuthService = class AuthService {
                 role: user.role,
                 entryNumber: user.entryNumber,
                 department: user.department,
+                isFacultyAdvisor: user.isFacultyAdvisor,
             },
         };
     }
@@ -114,6 +115,7 @@ let AuthService = class AuthService {
             entryNumber: user.entryNumber,
             department: user.department,
             branch: branch,
+            isFacultyAdvisor: user.isFacultyAdvisor,
         };
     }
 };

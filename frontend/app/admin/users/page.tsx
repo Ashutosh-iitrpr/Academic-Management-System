@@ -28,6 +28,7 @@ import {
   FormControlLabel,
   FormControl,
   FormLabel,
+  Checkbox,
 } from '@mui/material';
 import Alert from '@mui/material/Alert';
 import DashboardLayout from '@/components/layout/DashboardLayout';
@@ -53,6 +54,7 @@ interface User {
   role: string;
   entryNumber?: string;
   department?: string;
+  isFacultyAdvisor?: boolean;
   isActive: boolean;
   createdAt: string;
 }
@@ -63,6 +65,7 @@ interface CreateUserForm {
   role: 'STUDENT' | 'INSTRUCTOR' | 'ADMIN';
   entryNumber?: string;
   department?: string;
+  isFacultyAdvisor?: boolean;
 }
 
 interface EditUserForm extends CreateUserForm {
@@ -98,6 +101,7 @@ const UsersPage = () => {
   const [csvDialogOpen, setCsvDialogOpen] = useState(false);
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [uploadingCsv, setUploadingCsv] = useState(false);
+  const [togglingAdvisor, setTogglingAdvisor] = useState<string | null>(null);
   const [formData, setFormData] = useState<CreateUserForm>({
     name: '',
     email: '',
@@ -329,7 +333,7 @@ const UsersPage = () => {
     }));
   };
 
-  const handleEditInputChange = (field: keyof EditUserForm, value: string) => {
+  const handleEditInputChange = (field: keyof EditUserForm, value: string | boolean) => {
     setEditFormData((prev) => (prev ? { ...prev, [field]: value } : prev));
   };
 
@@ -435,6 +439,7 @@ const UsersPage = () => {
 
       if (editFormData.role === 'INSTRUCTOR') {
         payload.department = editFormData.department;
+        payload.isFacultyAdvisor = editFormData.isFacultyAdvisor;
       }
 
       await axiosClient.patch(`/admin/users/${editFormData.id}`, payload);
@@ -449,6 +454,40 @@ const UsersPage = () => {
       setError(errorMsg);
     } finally {
       setUpdatingUser(false);
+    }
+  };
+
+  const handleToggleFacultyAdvisor = async (userId: string, currentStatus: boolean) => {
+    try {
+      setTogglingAdvisor(userId);
+      setError('');
+      setSuccess('');
+      
+      const payload = { isFacultyAdvisor: !currentStatus };
+      console.log('Sending payload:', payload);
+      
+      const response = await axiosClient.patch(`/admin/users/${userId}`, payload);
+      console.log('Response:', response.data);
+
+      // Optimistically update local list using API response (fallback to toggled value)
+      const newAdvisorValue =
+        response?.data?.isFacultyAdvisor !== undefined
+          ? response.data.isFacultyAdvisor
+          : !currentStatus;
+
+      setUsers((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, isFacultyAdvisor: newAdvisorValue } : u))
+      );
+
+      setSuccess(`Instructor ${newAdvisorValue ? 'set as' : 'removed from'} faculty advisor`);
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error: any) {
+      const errorMsg = error?.response?.data?.message || error?.message || 'Failed to update faculty advisor status';
+      console.error('Error toggling faculty advisor:', error);
+      console.error('Error details:', error?.response?.data);
+      setError(errorMsg);
+    } finally {
+      setTogglingAdvisor(null);
     }
   };
 
@@ -520,12 +559,9 @@ const UsersPage = () => {
 
           {/* Header */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <PeopleIcon sx={{ fontSize: 28, color: '#8B3A3A' }} />
-              <Typography variant="h5" sx={{ fontWeight: 700, color: '#1a1a1a' }}>
-                User Management
-              </Typography>
-            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700 }}>
+              User Management
+            </Typography>
             <Box sx={{ display: 'flex', gap: 2 }}>
               <Button
                 variant="outlined"
@@ -735,7 +771,22 @@ const UsersPage = () => {
                     {instructors.map((user) => (
                       <TableRow key={user.id} sx={{ '&:hover': { backgroundColor: '#f9f9f9' } }}>
                         <TableCell>
-                          <Typography sx={{ fontWeight: 500 }}>{user.name}</Typography>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Typography sx={{ fontWeight: 500 }}>{user.name}</Typography>
+                            {user.isFacultyAdvisor && (
+                              <Chip 
+                                label="Faculty Advisor" 
+                                size="small" 
+                                variant="filled"
+                                sx={{ 
+                                  backgroundColor: '#FFC107', 
+                                  color: '#333',
+                                  fontWeight: 600,
+                                  height: '24px'
+                                }}
+                              />
+                            )}
+                          </Box>
                         </TableCell>
                         <TableCell>
                           <Typography sx={{ fontSize: '0.9rem', color: '#666' }}>{user.email}</Typography>
@@ -749,6 +800,38 @@ const UsersPage = () => {
                           />
                         </TableCell>
                         <TableCell>
+                          {user.role === 'INSTRUCTOR' ? (
+                            <Tooltip title={user.isFacultyAdvisor ? 'Remove as Faculty Advisor' : 'Set as Faculty Advisor'}>
+                              <Button
+                                size="small"
+                                variant={user.isFacultyAdvisor ? 'contained' : 'outlined'}
+                                sx={{
+                                  backgroundColor: user.isFacultyAdvisor ? '#FFC107' : 'transparent',
+                                  color: user.isFacultyAdvisor ? '#333' : '#FFC107',
+                                  borderColor: '#FFC107',
+                                  marginRight: '8px',
+                                  minWidth: '110px',
+                                  '&:hover': {
+                                    backgroundColor: user.isFacultyAdvisor ? '#FFB300' : 'rgba(255, 193, 7, 0.08)',
+                                  },
+                                }}
+                                onClick={() => handleToggleFacultyAdvisor(user.id, user.isFacultyAdvisor || false)}
+                                disabled={togglingAdvisor === user.id}
+                              >
+                                {togglingAdvisor === user.id ? (
+                                  <CircularProgress size={16} sx={{ color: user.isFacultyAdvisor ? '#333' : '#FFC107' }} />
+                                ) : user.isFacultyAdvisor ? (
+                                'Unset Advisor'
+                              ) : (
+                                'Set Advisor'
+                              )}
+                            </Button>
+                          </Tooltip>
+                          ) : (
+                            <Typography variant="body2" color="text.secondary" sx={{ marginRight: '8px', minWidth: '110px' }}>
+                              -
+                            </Typography>
+                          )}
                           <Tooltip title="Edit user">
                             <IconButton
                               size="small"
@@ -761,6 +844,7 @@ const UsersPage = () => {
                                   role: user.role as EditUserForm['role'],
                                   entryNumber: user.entryNumber || '',
                                   department: user.department || '',
+                                  isFacultyAdvisor: user.isFacultyAdvisor || false,
                                 });
                                 setError('');
                                 setSuccess('');
@@ -1079,14 +1163,26 @@ const UsersPage = () => {
                   />
                 )}
                 {editFormData?.role === 'INSTRUCTOR' && (
-                  <TextField
-                    fullWidth
-                    label="Department"
-                    placeholder="e.g., Computer Science"
-                    value={editFormData.department || ''}
-                    onChange={(e) => handleEditInputChange('department', e.target.value)}
-                    disabled={updatingUser}
-                  />
+                  <>
+                    <TextField
+                      fullWidth
+                      label="Department"
+                      placeholder="e.g., Computer Science"
+                      value={editFormData.department || ''}
+                      onChange={(e) => handleEditInputChange('department', e.target.value)}
+                      disabled={updatingUser}
+                    />
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={editFormData.isFacultyAdvisor || false}
+                          onChange={(e) => handleEditInputChange('isFacultyAdvisor', e.target.checked)}
+                          disabled={updatingUser}
+                        />
+                      }
+                      label="Is Faculty Advisor"
+                    />
+                  </>
                 )}
               </Box>
             </DialogContent>

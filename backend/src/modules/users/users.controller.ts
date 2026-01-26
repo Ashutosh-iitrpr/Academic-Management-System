@@ -19,12 +19,10 @@ export class UsersController {
 
   @Get()
   getAllUsers() {
-    // TODO: Implement actual user retrieval
     return this.usersService.getAllUsers();
   }
 
-  
-  // 👇 ADD THIS
+  // More specific routes must come BEFORE generic :id routes
   @Patch(":id/deactivate")
   deactivate(@Param("id") id: string) {
     return this.usersService.deactivateUser(id);
@@ -41,5 +39,16 @@ export class UsersController {
     @Body() dto: { department: string }
   ) {
     return this.usersService.updateUserDepartment(id, dto.department);
+  }
+
+  // Generic :id route must come LAST
+  @Patch(":id")
+  async updateUser(
+    @Param("id") id: string,
+    @Body() dto: any
+  ) {
+    const result = await this.usersService.updateUser(id, dto);
+    console.log('Controller returning:', JSON.stringify(result, null, 2));
+    return result;
   }
 }

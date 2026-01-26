@@ -71,6 +71,7 @@ export declare class AdminController {
         id: string;
         isActive: boolean;
         createdAt: Date;
+        isFacultyAdvisor: boolean;
     }[]>;
     downloadStudentsData(res: any): Promise<void>;
     downloadInstructorsData(res: any): Promise<void>;
@@ -89,6 +90,7 @@ export declare class AdminController {
         id: string;
         isActive: boolean;
         createdAt: Date;
+        isFacultyAdvisor: boolean;
     }>;
     bulkUploadUsers(file: any): Promise<{
         createdCount: number;
@@ -105,6 +107,7 @@ export declare class AdminController {
         id: string;
         isActive: boolean;
         createdAt: Date;
+        isFacultyAdvisor: boolean;
     }>;
     activateUser(id: string): Promise<{
         name: string;
@@ -115,6 +118,7 @@ export declare class AdminController {
         id: string;
         isActive: boolean;
         createdAt: Date;
+        isFacultyAdvisor: boolean;
     }>;
     updateUser(id: string, dto: UpdateUserDto): Promise<{
         name: string;
@@ -125,6 +129,7 @@ export declare class AdminController {
         id: string;
         isActive: boolean;
         createdAt: Date;
+        isFacultyAdvisor: boolean;
     }>;
     getTranscriptByEntry(entryNumber: string): Promise<{
         id: string;
@@ -211,6 +216,7 @@ export declare class AdminController {
         courseOfferingId: string;
         enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
         studentId: string;
+        advisorId: string | null;
         grade: import("@prisma/client").$Enums.Grade | null;
         source: import("@prisma/client").$Enums.EnrollmentSource;
     })[]>;

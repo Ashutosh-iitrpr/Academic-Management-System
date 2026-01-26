@@ -515,13 +515,23 @@ const StudentRecordPage = () => {
                                   </TableCell>
                                   <TableCell sx={{ fontSize: '0.9rem' }}>
                                     <Chip
-                                      label={enrollment.status}
+                                      label={
+                                        enrollment.status === 'PENDING_INSTRUCTOR'
+                                          ? 'Pending Instructor'
+                                          : enrollment.status === 'PENDING_ADVISOR'
+                                          ? 'Pending Advisor'
+                                          : enrollment.status
+                                      }
                                       size="small"
                                       color={
                                         enrollment.status === 'COMPLETED'
                                           ? 'success'
-                                          : enrollment.status === 'ACTIVE'
+                                          : enrollment.status === 'ENROLLED'
                                           ? 'info'
+                                          : enrollment.status === 'PENDING_INSTRUCTOR' || enrollment.status === 'PENDING_ADVISOR'
+                                          ? 'warning'
+                                          : enrollment.status === 'REJECTED'
+                                          ? 'error'
                                           : 'default'
                                       }
                                     />

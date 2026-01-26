@@ -188,6 +188,7 @@ export class AdminController {
         role: true,
         entryNumber: true,
         department: true,
+        isFacultyAdvisor: true,
         isActive: true,
         createdAt: true,
       },
@@ -489,9 +490,15 @@ export class AdminController {
       if (dto.department !== undefined) {
         data.department = dto.department;
       }
+      if (dto.isFacultyAdvisor !== undefined) {
+        data.isFacultyAdvisor = dto.isFacultyAdvisor;
+      }
     } else {
       if (dto.department !== undefined) {
         throw new BadRequestException("Only instructors can have departments");
+      }
+      if (dto.isFacultyAdvisor !== undefined) {
+        throw new BadRequestException("Only instructors can be faculty advisors");
       }
     }
 
@@ -506,6 +513,7 @@ export class AdminController {
           role: true,
           entryNumber: true,
           department: true,
+          isFacultyAdvisor: true,
           isActive: true,
           createdAt: true,
         },

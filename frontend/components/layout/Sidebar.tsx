@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Box,
   Drawer,
@@ -10,17 +10,14 @@ import {
   ListItemIcon,
   ListItemText,
   Divider,
-  Paper,
   Typography,
   Avatar,
   Button,
-  IconButton,
   useMediaQuery,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
-import Link from 'next/link';
 
 // Icons
 import DashboardIcon from '@mui/icons-material/Dashboard';
@@ -30,14 +27,13 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import DescriptionIcon from '@mui/icons-material/Description';
 import ChatIcon from '@mui/icons-material/Chat';
 import LogoutIcon from '@mui/icons-material/Logout';
-import MenuIcon from '@mui/icons-material/Menu';
-import CloseIcon from '@mui/icons-material/Close';
 
 interface NavigationItem {
   label: string;
   path: string;
   icon: React.ReactNode;
   roles: string[];
+  requiresFacultyAdvisor?: boolean;
 }
 
 const getDashboardPath = (role?: string): string => {
@@ -142,6 +138,13 @@ const navigationItems: NavigationItem[] = [
     roles: ['INSTRUCTOR'],
   },
   {
+    label: 'Faculty Advisor',
+    path: '/instructor/advisor',
+    icon: <PeopleIcon />,
+    roles: ['INSTRUCTOR'],
+    requiresFacultyAdvisor: true,
+  },
+  {
     label: 'Student Transcripts',
     path: '/instructor/students',
     icon: <DescriptionIcon />,
@@ -192,7 +195,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ open = true, onClose }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  const filteredNavItems = navigationItems.filter((item) => item.roles.includes(user?.role || ''));
+  const filteredNavItems = navigationItems.filter((item) => {
+    if (!item.roles.includes(user?.role || '')) {
+      return false;
+    }
+
+    if (item.requiresFacultyAdvisor && !user?.isFacultyAdvisor) {
+      return false;
+    }
+
+    return true;
+  });
 
   const handleLogout = () => {
     logout();

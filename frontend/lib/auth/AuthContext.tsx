@@ -12,6 +12,7 @@ export interface User {
   entryNumber?: string;
   department?: string;
   branch?: string;
+  isFacultyAdvisor?: boolean;
 }
 
 interface AuthContextType {
@@ -77,6 +78,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           role: profileData.role,
           entryNumber: profileData.entryNumber || undefined,
           branch: profileData.branch || undefined,
+          isFacultyAdvisor: profileData.isFacultyAdvisor,
         };
         setUser(updatedUser);
         if (typeof window !== 'undefined') {
@@ -132,6 +134,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           name: data.user?.name || 'User',
           role: data.user?.role || 'STUDENT',
           entryNumber: data.user?.entryNumber,
+          isFacultyAdvisor: data.user?.isFacultyAdvisor,
         };
         setUser(basicUser);
         if (typeof window !== 'undefined') {

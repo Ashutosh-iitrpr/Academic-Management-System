@@ -24,6 +24,7 @@ model User {
 
   entryNumber String? @unique
   department  String? // Required for instructors, optional for others
+  isFacultyAdvisor Boolean @default(false) // Set to true for instructors who are faculty advisors
 
   enrollments Enrollment[]
   enrollmentTriggers EnrollmentTrigger[]
@@ -33,6 +34,7 @@ model User {
 
   feedbackForms    FeedbackForm[]
   feedbackResponses CourseFeedback[]
+  advisorEnrollments Enrollment[] @relation("FacultyAdvisor")
 }
 
 model OtpToken {
@@ -143,6 +145,7 @@ model CourseOffering {
 
 enum EnrollmentStatus {
   PENDING_INSTRUCTOR
+  PENDING_ADVISOR
   ENROLLED
   REJECTED
   DROPPED
@@ -167,6 +170,10 @@ model Enrollment {
 
   status           EnrollmentStatus
   enrollmentType   EnrollmentType
+
+  // Faculty advisor tracking
+  advisorId        String?
+  advisor          User?             @relation("FacultyAdvisor", fields: [advisorId], references: [id])
 
   grade            Grade?
   completedAt      DateTime?

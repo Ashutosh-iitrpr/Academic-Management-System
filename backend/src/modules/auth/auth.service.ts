@@ -113,6 +113,7 @@ export class AuthService {
         role: user.role,
         entryNumber: user.entryNumber,
         department: user.department,
+        isFacultyAdvisor: user.isFacultyAdvisor,
       },
     };
   }
@@ -144,6 +145,7 @@ export class AuthService {
       entryNumber: user.entryNumber,
       department: user.department,
       branch: branch,
+      isFacultyAdvisor: user.isFacultyAdvisor,
     };
   }
 }

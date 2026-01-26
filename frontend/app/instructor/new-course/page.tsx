@@ -82,8 +82,8 @@ const InstructorNewCourse = () => {
       }
 
       // Validate LTPSC format
-      if (!/^\d+-\d+-\d+-\d+$/.test(formData.ltpsc)) {
-        toast.error('LTPSC format must be like 3-0-0-3');
+      if (!/^\d+-\d+-\d+-\d+-\d+$/.test(formData.ltpsc)) {
+        toast.error('LTPSC format must be like 3-0-0-0-3');
         return;
       }
 
@@ -275,7 +275,7 @@ const InstructorNewCourse = () => {
               placeholder="e.g., 3-0-0-3"
               value={formData.ltpsc}
               onChange={(e) => handleInputChange('ltpsc', e.target.value)}
-              helperText="Format: Lecture-Tutorial-Practical-Self Study (e.g., 3-0-0-3)"
+              helperText="Format: Lecture-Tutorial-Practical-Self Study-Credits (e.g., 3-0-0-0-3)"
               required
             />
             <TextField

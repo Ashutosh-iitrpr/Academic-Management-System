@@ -3,4 +3,5 @@ export declare class UpdateUserDto {
     email?: string;
     entryNumber?: string;
     department?: string;
+    isFacultyAdvisor?: boolean;
 }

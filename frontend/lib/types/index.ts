@@ -8,6 +8,7 @@ export interface User {
   entryNumber?: string;
   department?: string;
   branch?: string;
+  isFacultyAdvisor?: boolean;
 }
 
 export interface AcademicCalendar {

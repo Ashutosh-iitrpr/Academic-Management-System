@@ -54,6 +54,15 @@ let EnrollmentsController = class EnrollmentsController {
     uploadGrades(offeringId, dto, req) {
         return this.enrollmentsService.uploadGrades(req.user.userId, offeringId, dto.grades);
     }
+    getPendingEnrollmentsForAdvisor(req) {
+        return this.enrollmentsService.getPendingForAdvisor(req.user.userId);
+    }
+    approveEnrollmentAsAdvisor(id, req) {
+        return this.enrollmentsService.approveEnrollmentAsAdvisor(req.user.userId, id);
+    }
+    rejectEnrollmentAsAdvisor(id, req) {
+        return this.enrollmentsService.rejectEnrollmentAsAdvisor(req.user.userId, id);
+    }
     dropEnrollment(id, req) {
         return this.enrollmentsService.dropEnrollment(req.user.userId, id);
     }
@@ -148,6 +157,32 @@ __decorate([
     __metadata("design:paramtypes", [String, upload_grades_dto_1.UploadGradesDto, Object]),
     __metadata("design:returntype", void 0)
 ], EnrollmentsController.prototype, "uploadGrades", null);
+__decorate([
+    (0, common_1.Get)("advisor/enrollments/pending"),
+    (0, roles_decorator_1.Roles)("INSTRUCTOR"),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], EnrollmentsController.prototype, "getPendingEnrollmentsForAdvisor", null);
+__decorate([
+    (0, common_1.Patch)("advisor/enrollments/:id/approve"),
+    (0, roles_decorator_1.Roles)("INSTRUCTOR"),
+    __param(0, (0, common_1.Param)("id")),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], EnrollmentsController.prototype, "approveEnrollmentAsAdvisor", null);
+__decorate([
+    (0, common_1.Patch)("advisor/enrollments/:id/reject"),
+    (0, roles_decorator_1.Roles)("INSTRUCTOR"),
+    __param(0, (0, common_1.Param)("id")),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], EnrollmentsController.prototype, "rejectEnrollmentAsAdvisor", null);
 __decorate([
     (0, common_1.Patch)("student/enrollments/:id/drop"),
     (0, roles_decorator_1.Roles)("STUDENT"),
