@@ -331,7 +331,7 @@ export default function LoginPage() {
 
         {/* Footer */}
         <Typography variant="caption" sx={{ display: 'block', textAlign: 'center', mt: 3, color: '#999' }}>
-          © 2024 IIT Ropar. All rights reserved.
+          © 2026 IIT Ropar. All rights reserved.
         </Typography>
       </Container>
     </Box>
