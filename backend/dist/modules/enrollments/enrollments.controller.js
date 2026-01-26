@@ -21,6 +21,7 @@ const roles_decorator_1 = require("../../common/decorators/roles.decorator");
 const request_enrollment_dto_1 = require("./dto/request-enrollment.dto");
 const create_enrollment_trigger_dto_1 = require("./dto/create-enrollment-trigger.dto");
 const upload_grades_dto_1 = require("./dto/upload-grades.dto");
+const bulk_action_enrollments_dto_1 = require("./dto/bulk-action-enrollments.dto");
 let EnrollmentsController = class EnrollmentsController {
     enrollmentsService;
     constructor(enrollmentsService) {
@@ -40,6 +41,9 @@ let EnrollmentsController = class EnrollmentsController {
     }
     rejectEnrollment(id, req) {
         return this.enrollmentsService.rejectEnrollment(req.user.userId, id);
+    }
+    bulkActionEnrollments(dto, req) {
+        return this.enrollmentsService.bulkActionEnrollments(req.user.userId, dto);
     }
     createEnrollmentTrigger(dto, req) {
         return this.enrollmentsService.createEnrollmentTrigger(req.user.userId, dto);
@@ -107,6 +111,15 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], EnrollmentsController.prototype, "rejectEnrollment", null);
+__decorate([
+    (0, common_1.Patch)("instructor/enrollments/bulk-action"),
+    (0, roles_decorator_1.Roles)("INSTRUCTOR"),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [bulk_action_enrollments_dto_1.BulkActionEnrollmentsDto, Object]),
+    __metadata("design:returntype", void 0)
+], EnrollmentsController.prototype, "bulkActionEnrollments", null);
 __decorate([
     (0, common_1.Post)("instructor/enrollments/triggers"),
     (0, roles_decorator_1.Roles)("INSTRUCTOR"),

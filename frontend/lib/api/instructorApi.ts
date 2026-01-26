@@ -175,6 +175,18 @@ export const instructorApi = {
     return response.data;
   },
 
+  // Bulk approve or reject enrollments
+  bulkActionEnrollments: async (
+    enrollmentIds: string[],
+    action: 'approve' | 'reject'
+  ): Promise<{ message: string; count: number; action: string }> => {
+    const response = await api.patch('/instructor/enrollments/bulk-action', {
+      enrollmentIds,
+      action,
+    });
+    return response.data;
+  },
+
   // Create auto enrollment trigger
   createEnrollmentTrigger: async (dto: CreateEnrollmentTriggerDto): Promise<any> => {
     const response = await api.post('/instructor/enrollments/triggers', dto);

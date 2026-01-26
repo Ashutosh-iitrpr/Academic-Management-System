@@ -44,6 +44,7 @@ import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import SearchIcon from '@mui/icons-material/Search';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import ClearIcon from '@mui/icons-material/Clear';
+import Checkbox from '@mui/material/Checkbox';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -81,6 +82,15 @@ const InstructorEnrollments = () => {
     enrollment: Enrollment | null;
   }>({ open: false, type: null, enrollment: null });
   const [actionLoading, setActionLoading] = useState(false);
+
+  // Bulk action state
+  const [selectedEnrollmentIds, setSelectedEnrollmentIds] = useState<Set<string>>(new Set());
+  const [bulkActionDialog, setBulkActionDialog] = useState<{
+    open: boolean;
+    action: 'approve' | 'reject' | null;
+    count: number;
+  }>({ open: false, action: null, count: 0 });
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
 
   // Filters for Pending Requests Tab
   const [pendingTypeFilter, setPendingTypeFilter] = useState<string>('ALL');
@@ -189,6 +199,84 @@ const InstructorEnrollments = () => {
     } finally {
       setActionLoading(false);
     }
+  };
+
+  // ========== BULK ACTION HANDLERS ==========
+
+  const handleToggleEnrollment = (enrollmentId: string) => {
+    const newSelected = new Set(selectedEnrollmentIds);
+    if (newSelected.has(enrollmentId)) {
+      newSelected.delete(enrollmentId);
+    } else {
+      newSelected.add(enrollmentId);
+    }
+    setSelectedEnrollmentIds(newSelected);
+  };
+
+  const handleSelectAllPending = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.checked) {
+      const allIds = new Set(filteredPendingEnrollments.map(e => e.id));
+      setSelectedEnrollmentIds(allIds);
+    } else {
+      setSelectedEnrollmentIds(new Set());
+    }
+  };
+
+  const handleOpenBulkActionDialog = (action: 'approve' | 'reject') => {
+    if (selectedEnrollmentIds.size === 0) {
+      toast.error('Please select at least one enrollment');
+      return;
+    }
+    setBulkActionDialog({
+      open: true,
+      action,
+      count: selectedEnrollmentIds.size,
+    });
+  };
+
+  const handleCloseBulkActionDialog = () => {
+    setBulkActionDialog({ open: false, action: null, count: 0 });
+  };
+
+  const handleExecuteBulkAction = async () => {
+    if (!bulkActionDialog.action) return;
+
+    try {
+      setBulkActionLoading(true);
+      const enrollmentIds = Array.from(selectedEnrollmentIds);
+      const result = await instructorApi.bulkActionEnrollments(
+        enrollmentIds,
+        bulkActionDialog.action
+      );
+      
+      toast.success(
+        `✓ ${bulkActionDialog.action === 'approve' ? 'Approved' : 'Rejected'} ${result.count} enrollment(s)`
+      );
+      
+      // Reset selection and close dialog
+      setSelectedEnrollmentIds(new Set());
+      handleCloseBulkActionDialog();
+      
+      // Refresh data
+      fetchData();
+      if (selectedOffering && selectedOffering !== 'all') {
+        fetchOfferingEnrollments(selectedOffering);
+      }
+    } catch (error: any) {
+      console.error('Failed to perform bulk action:', error);
+      toast.error(error.response?.data?.message || 'Failed to perform bulk action');
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
+  const clearBulkSelection = () => {
+    setSelectedEnrollmentIds(new Set());
+  };
+
+  const handleSelectAllVisible = () => {
+    if (filteredPendingEnrollments.length === 0) return;
+    setSelectedEnrollmentIds(new Set(filteredPendingEnrollments.map((e) => e.id)));
   };
 
   const getEnrollmentTypeColor = (type: string) => {
@@ -409,11 +497,20 @@ const InstructorEnrollments = () => {
                       </Grid>
 
                       {/* Results Count */}
-                      <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'space-between' }}>
                         <Typography variant="body2" sx={{ color: '#666' }}>
                           Showing <strong>{filteredPendingEnrollments.length}</strong> of{' '}
                           <strong>{pendingEnrollments.length}</strong> pending requests
                         </Typography>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={handleSelectAllVisible}
+                          disabled={filteredPendingEnrollments.length === 0}
+                          sx={{ textTransform: 'none' }}
+                        >
+                          Select all visible
+                        </Button>
                       </Box>
                     </Box>
 
@@ -431,85 +528,167 @@ const InstructorEnrollments = () => {
                         </Typography>
                       </Box>
                     ) : (
-                  <Box sx={{ overflowX: 'auto' }}>
-                    <Table>
-                      <TableHead>
-                        <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
-                          <TableCell sx={{ fontWeight: 600 }}>Student Name</TableCell>
-                          <TableCell sx={{ fontWeight: 600 }}>Entry Number</TableCell>
-                          <TableCell sx={{ fontWeight: 600 }}>Email</TableCell>
-                          <TableCell sx={{ fontWeight: 600 }}>Course</TableCell>
-                          <TableCell sx={{ fontWeight: 600 }}>Enrollment Type</TableCell>
-                          <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                          <TableCell sx={{ fontWeight: 600, textAlign: 'center' }}>Actions</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {filteredPendingEnrollments.map((enrollment) => (
-                          <TableRow
-                            key={enrollment.id}
+                      <>
+                        {/* Bulk Action Bar */}
+                        {selectedEnrollmentIds.size > 0 && (
+                          <Box
                             sx={{
-                              '&:hover': { backgroundColor: '#f9f9f9' },
+                              mb: 2,
+                              p: 2,
+                              backgroundColor: '#f0f7ff',
+                              border: '1px solid #2196f3',
+                              borderRadius: 1,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
                             }}
                           >
-                            <TableCell>{enrollment.student.name}</TableCell>
-                            <TableCell>{enrollment.student.entryNumber || 'N/A'}</TableCell>
-                            <TableCell>{enrollment.student.email}</TableCell>
-                            <TableCell>
-                              {enrollment.courseOffering 
-                                ? `${enrollment.courseOffering.course.code} - ${enrollment.courseOffering.course.name}`
-                                : 'N/A'}
-                            </TableCell>
-                            <TableCell>
-                              <Chip
-                                label={enrollment.enrollmentType}
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                {selectedEnrollmentIds.size} selected
+                              </Typography>
+                              <Button
                                 size="small"
-                                color={getEnrollmentTypeColor(enrollment.enrollmentType) as any}
-                                sx={{ fontWeight: 600 }}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <StatusChip status={enrollment.status as any} size="small" />
-                            </TableCell>
-                            <TableCell>
-                              <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
-                                <Button
-                                  size="small"
-                                  variant="contained"
-                                  startIcon={<CheckCircleIcon />}
+                                onClick={clearBulkSelection}
+                                sx={{ textTransform: 'none' }}
+                              >
+                                Clear
+                              </Button>
+                            </Box>
+                            <Box sx={{ display: 'flex', gap: 1 }}>
+                              <Button
+                                size="small"
+                                variant="contained"
+                                startIcon={<CheckCircleIcon />}
+                                sx={{
+                                  backgroundColor: '#4caf50',
+                                  '&:hover': { backgroundColor: '#388e3c' },
+                                  textTransform: 'none',
+                                }}
+                                onClick={() => handleOpenBulkActionDialog('approve')}
+                              >
+                                Approve All
+                              </Button>
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                startIcon={<CancelIcon />}
+                                sx={{
+                                  borderColor: '#f44336',
+                                  color: '#f44336',
+                                  textTransform: 'none',
+                                  '&:hover': {
+                                    borderColor: '#d32f2f',
+                                    backgroundColor: 'rgba(244, 67, 54, 0.04)',
+                                  },
+                                }}
+                                onClick={() => handleOpenBulkActionDialog('reject')}
+                              >
+                                Reject All
+                              </Button>
+                            </Box>
+                          </Box>
+                        )}
+                        <Box sx={{ overflowX: 'auto' }}>
+                          <Table>
+                            <TableHead>
+                              <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                                <TableCell sx={{ fontWeight: 600, width: 50 }}>
+                                  <Checkbox
+                                    indeterminate={
+                                      selectedEnrollmentIds.size > 0 &&
+                                      selectedEnrollmentIds.size < filteredPendingEnrollments.length
+                                    }
+                                    checked={
+                                      filteredPendingEnrollments.length > 0 &&
+                                      selectedEnrollmentIds.size === filteredPendingEnrollments.length
+                                    }
+                                    onChange={handleSelectAllPending}
+                                  />
+                                </TableCell>
+                                <TableCell sx={{ fontWeight: 600 }}>Student Name</TableCell>
+                                <TableCell sx={{ fontWeight: 600 }}>Entry Number</TableCell>
+                                <TableCell sx={{ fontWeight: 600 }}>Email</TableCell>
+                                <TableCell sx={{ fontWeight: 600 }}>Course</TableCell>
+                                <TableCell sx={{ fontWeight: 600 }}>Enrollment Type</TableCell>
+                                <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                                <TableCell sx={{ fontWeight: 600, textAlign: 'center' }}>Actions</TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {filteredPendingEnrollments.map((enrollment) => (
+                                <TableRow
+                                  key={enrollment.id}
                                   sx={{
-                                    backgroundColor: '#4caf50',
-                                    '&:hover': { backgroundColor: '#388e3c' },
-                                    textTransform: 'none',
+                                    '&:hover': { backgroundColor: '#f9f9f9' },
+                                    backgroundColor: selectedEnrollmentIds.has(enrollment.id) ? '#f0f7ff' : 'transparent',
                                   }}
-                                  onClick={() => handleOpenConfirmDialog('approve', enrollment)}
                                 >
-                                  Approve
-                                </Button>
-                                <Button
-                                  size="small"
-                                  variant="outlined"
-                                  startIcon={<CancelIcon />}
-                                  sx={{
-                                    borderColor: '#f44336',
-                                    color: '#f44336',
-                                    textTransform: 'none',
-                                    '&:hover': {
-                                      borderColor: '#d32f2f',
-                                      backgroundColor: 'rgba(244, 67, 54, 0.04)',
-                                    },
-                                  }}
-                                  onClick={() => handleOpenConfirmDialog('reject', enrollment)}
-                                >
-                                  Reject
-                                </Button>
-                              </Box>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </Box>
+                                  <TableCell sx={{ width: 50 }}>
+                                    <Checkbox
+                                      checked={selectedEnrollmentIds.has(enrollment.id)}
+                                      onChange={() => handleToggleEnrollment(enrollment.id)}
+                                    />
+                                  </TableCell>
+                                  <TableCell>{enrollment.student.name}</TableCell>
+                                  <TableCell>{enrollment.student.entryNumber || 'N/A'}</TableCell>
+                                  <TableCell>{enrollment.student.email}</TableCell>
+                                  <TableCell>
+                                    {enrollment.courseOffering
+                                      ? `${enrollment.courseOffering.course.code} - ${enrollment.courseOffering.course.name}`
+                                      : 'N/A'}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Chip
+                                      label={enrollment.enrollmentType}
+                                      size="small"
+                                      color={getEnrollmentTypeColor(enrollment.enrollmentType) as any}
+                                      sx={{ fontWeight: 600 }}
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <StatusChip status={enrollment.status as any} size="small" />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
+                                      <Button
+                                        size="small"
+                                        variant="contained"
+                                        startIcon={<CheckCircleIcon />}
+                                        sx={{
+                                          backgroundColor: '#4caf50',
+                                          '&:hover': { backgroundColor: '#388e3c' },
+                                          textTransform: 'none',
+                                        }}
+                                        onClick={() => handleOpenConfirmDialog('approve', enrollment)}
+                                      >
+                                        Approve
+                                      </Button>
+                                      <Button
+                                        size="small"
+                                        variant="outlined"
+                                        startIcon={<CancelIcon />}
+                                        sx={{
+                                          borderColor: '#f44336',
+                                          color: '#f44336',
+                                          textTransform: 'none',
+                                          '&:hover': {
+                                            borderColor: '#d32f2f',
+                                            backgroundColor: 'rgba(244, 67, 54, 0.04)',
+                                          },
+                                        }}
+                                        onClick={() => handleOpenConfirmDialog('reject', enrollment)}
+                                      >
+                                        Reject
+                                      </Button>
+                                    </Box>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </Box>
+                      </>
                     )}
                   </>
                 )}
@@ -831,6 +1010,52 @@ const InstructorEnrollments = () => {
               disabled={actionLoading}
             >
               {actionLoading ? 'Processing...' : confirmDialog.type === 'approve' ? 'Approve' : 'Reject'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Bulk Action Confirmation Dialog */}
+        <Dialog
+          open={bulkActionDialog.open}
+          onClose={handleCloseBulkActionDialog}
+          maxWidth="xs"
+          fullWidth
+        >
+          <DialogTitle sx={{ fontWeight: 700, fontSize: '1.25rem' }}>
+            {bulkActionDialog.action === 'approve' ? 'Approve Enrollments' : 'Reject Enrollments'}
+          </DialogTitle>
+          <DialogContent sx={{ pt: 2 }}>
+            <Alert severity={bulkActionDialog.action === 'approve' ? 'success' : 'error'} sx={{ mb: 2 }}>
+              {bulkActionDialog.action === 'approve'
+                ? `This will approve ${bulkActionDialog.count} enrollment request(s).`
+                : `This will reject ${bulkActionDialog.count} enrollment request(s).`}
+            </Alert>
+            <Typography variant="body2" sx={{ color: '#666' }}>
+              This action cannot be undone. Make sure you want to{' '}
+              <strong>{bulkActionDialog.action === 'approve' ? 'approve' : 'reject'}</strong> all selected
+              enrollments.
+            </Typography>
+          </DialogContent>
+          <DialogActions sx={{ p: 2 }}>
+            <Button
+              onClick={handleCloseBulkActionDialog}
+              sx={{ color: '#666' }}
+              disabled={bulkActionLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleExecuteBulkAction}
+              variant="contained"
+              sx={{
+                backgroundColor: bulkActionDialog.action === 'approve' ? '#4caf50' : '#f44336',
+                '&:hover': {
+                  backgroundColor: bulkActionDialog.action === 'approve' ? '#388e3c' : '#d32f2f',
+                },
+              }}
+              disabled={bulkActionLoading}
+            >
+              {bulkActionLoading ? 'Processing...' : bulkActionDialog.action === 'approve' ? 'Approve All' : 'Reject All'}
             </Button>
           </DialogActions>
         </Dialog>

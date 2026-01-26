@@ -13,6 +13,7 @@ import {
 } from "@prisma/client";
 import { RequestEnrollmentDto } from "./dto/request-enrollment.dto";
 import { CreateEnrollmentTriggerDto } from "./dto/create-enrollment-trigger.dto";
+import { BulkActionEnrollmentsDto } from "./dto/bulk-action-enrollments.dto";
 import { MAX_CREDITS_PER_SEMESTER } from "../../constants/academics.constants";
 import { AcademicCalendarService } from "../../common/services/academic-calendar.service";
 
@@ -269,6 +270,82 @@ async requestEnrollment(
       where: { id: enrollmentId },
       data: { status: EnrollmentStatus.REJECTED },
     });
+  }
+
+  async bulkActionEnrollments(
+    instructorId: string,
+    dto: {
+      enrollmentIds: string[];
+      action: "approve" | "reject";
+    },
+  ) {
+    if (!dto.enrollmentIds || dto.enrollmentIds.length === 0) {
+      throw new BadRequestException("No enrollment IDs provided");
+    }
+
+    // Fetch all enrollments to validate
+    const enrollments = await this.prisma.enrollment.findMany({
+      where: {
+        id: { in: dto.enrollmentIds },
+      },
+      include: { courseOffering: true },
+    });
+
+    if (enrollments.length === 0) {
+      throw new BadRequestException("No enrollments found");
+    }
+
+    // Validate:
+    // 1. All enrollments belong to this instructor
+    // 2. All enrollments are in PENDING_INSTRUCTOR status
+    const invalidEnrollments: Array<{ id: string; reason: string }> = [];
+
+    for (const enrollment of enrollments) {
+      if (enrollment.courseOffering.instructorId !== instructorId) {
+        invalidEnrollments.push({
+          id: enrollment.id,
+          reason: "Not your enrollment",
+        });
+      }
+
+      if (enrollment.status !== EnrollmentStatus.PENDING_INSTRUCTOR) {
+        invalidEnrollments.push({
+          id: enrollment.id,
+          reason: "Not in pending status",
+        });
+      }
+    }
+
+    if (invalidEnrollments.length > 0) {
+      throw new ForbiddenException({
+        message: "Some enrollments cannot be processed",
+        invalidEnrollments,
+      });
+    }
+
+    // Perform bulk update
+    const newStatus =
+      dto.action === "approve"
+        ? EnrollmentStatus.ENROLLED
+        : EnrollmentStatus.REJECTED;
+
+    const updateData = {
+      status: newStatus,
+      ...(dto.action === "approve" && { approvedAt: new Date() }),
+    };
+
+    const result = await this.prisma.enrollment.updateMany({
+      where: {
+        id: { in: dto.enrollmentIds },
+      },
+      data: updateData,
+    });
+
+    return {
+      message: `${dto.action === "approve" ? "Approved" : "Rejected"} ${result.count} enrollment(s)`,
+      count: result.count,
+      action: dto.action,
+    };
   }
 
   // ================= STUDENT DROP / AUDIT =================

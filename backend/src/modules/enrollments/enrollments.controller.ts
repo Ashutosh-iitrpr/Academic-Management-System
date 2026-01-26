@@ -15,6 +15,7 @@ import { Roles } from "../../common/decorators/roles.decorator";
 import { RequestEnrollmentDto } from "./dto/request-enrollment.dto";
 import { CreateEnrollmentTriggerDto } from "./dto/create-enrollment-trigger.dto";
 import { UploadGradesDto } from "./dto/upload-grades.dto";
+import { BulkActionEnrollmentsDto } from "./dto/bulk-action-enrollments.dto";
 
 @Controller()
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -74,6 +75,18 @@ export class EnrollmentsController {
     return this.enrollmentsService.rejectEnrollment(
       req.user.userId,
       id,
+    );
+  }
+
+  @Patch("instructor/enrollments/bulk-action")
+  @Roles("INSTRUCTOR")
+  bulkActionEnrollments(
+    @Body() dto: BulkActionEnrollmentsDto,
+    @Req() req,
+  ) {
+    return this.enrollmentsService.bulkActionEnrollments(
+      req.user.userId,
+      dto,
     );
   }
 

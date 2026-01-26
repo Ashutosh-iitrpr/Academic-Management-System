@@ -185,6 +185,59 @@ let EnrollmentsService = class EnrollmentsService {
             data: { status: client_1.EnrollmentStatus.REJECTED },
         });
     }
+    async bulkActionEnrollments(instructorId, dto) {
+        if (!dto.enrollmentIds || dto.enrollmentIds.length === 0) {
+            throw new common_1.BadRequestException("No enrollment IDs provided");
+        }
+        const enrollments = await this.prisma.enrollment.findMany({
+            where: {
+                id: { in: dto.enrollmentIds },
+            },
+            include: { courseOffering: true },
+        });
+        if (enrollments.length === 0) {
+            throw new common_1.BadRequestException("No enrollments found");
+        }
+        const invalidEnrollments = [];
+        for (const enrollment of enrollments) {
+            if (enrollment.courseOffering.instructorId !== instructorId) {
+                invalidEnrollments.push({
+                    id: enrollment.id,
+                    reason: "Not your enrollment",
+                });
+            }
+            if (enrollment.status !== client_1.EnrollmentStatus.PENDING_INSTRUCTOR) {
+                invalidEnrollments.push({
+                    id: enrollment.id,
+                    reason: "Not in pending status",
+                });
+            }
+        }
+        if (invalidEnrollments.length > 0) {
+            throw new common_1.ForbiddenException({
+                message: "Some enrollments cannot be processed",
+                invalidEnrollments,
+            });
+        }
+        const newStatus = dto.action === "approve"
+            ? client_1.EnrollmentStatus.ENROLLED
+            : client_1.EnrollmentStatus.REJECTED;
+        const updateData = {
+            status: newStatus,
+            ...(dto.action === "approve" && { approvedAt: new Date() }),
+        };
+        const result = await this.prisma.enrollment.updateMany({
+            where: {
+                id: { in: dto.enrollmentIds },
+            },
+            data: updateData,
+        });
+        return {
+            message: `${dto.action === "approve" ? "Approved" : "Rejected"} ${result.count} enrollment(s)`,
+            count: result.count,
+            action: dto.action,
+        };
+    }
     async dropEnrollment(studentId, enrollmentId) {
         await this.academicCalendarService.assertDropAllowed();
         const enrollment = await this.prisma.enrollment.findUnique({
