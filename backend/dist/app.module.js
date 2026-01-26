@@ -19,6 +19,7 @@ const feedback_module_1 = require("./modules/feedback/feedback.module");
 const common_module_1 = require("./common/common.module");
 const admin_module_1 = require("./modules/admin/admin.module");
 const course_proposals_module_1 = require("./modules/course-proposals/course-proposals.module");
+const instructor_module_1 = require("./modules/instructor/instructor.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -29,6 +30,7 @@ exports.AppModule = AppModule = __decorate([
                 isGlobal: true,
             }),
             admin_module_1.AdminModule,
+            instructor_module_1.InstructorModule,
             common_module_1.CommonModule,
             users_module_1.UsersModule,
             auth_module_1.AuthModule,

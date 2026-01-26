@@ -126,27 +126,63 @@ export declare class AdminController {
         isActive: boolean;
         createdAt: Date;
     }>;
-    getTranscriptByEntry(entryNumber: string): {
-        student: {
+    getTranscriptByEntry(entryNumber: string): Promise<{
+        id: string;
+        name: string;
+        email: string;
+        entrynumber: string | null;
+        mainDegree: {
             id: string;
-            name: string;
-            email: string;
-            entryNumber: string;
-            branch: string;
-        };
-        cgpa: number;
-        totalCredits: number;
-        semesters: {
+            status: import("@prisma/client").$Enums.EnrollmentStatus;
+            grade: import("@prisma/client").$Enums.Grade | null;
+            enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
             semester: string;
-            sgpa: number;
-            courses: {
-                code: string;
-                name: string;
-                credits: number;
-                grade: string;
-            }[];
+            courseOffering: {
+                course: {
+                    name: string;
+                    code: string;
+                    credits: number;
+                };
+                instructor: {
+                    name: string;
+                };
+            };
         }[];
-    };
+        concentration: {
+            id: string;
+            status: import("@prisma/client").$Enums.EnrollmentStatus;
+            grade: import("@prisma/client").$Enums.Grade | null;
+            enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
+            semester: string;
+            courseOffering: {
+                course: {
+                    name: string;
+                    code: string;
+                    credits: number;
+                };
+                instructor: {
+                    name: string;
+                };
+            };
+        }[];
+        minor: {
+            id: string;
+            status: import("@prisma/client").$Enums.EnrollmentStatus;
+            grade: import("@prisma/client").$Enums.Grade | null;
+            enrollmentType: import("@prisma/client").$Enums.EnrollmentType;
+            semester: string;
+            courseOffering: {
+                course: {
+                    name: string;
+                    code: string;
+                    credits: number;
+                };
+                instructor: {
+                    name: string;
+                };
+            };
+        }[];
+    }>;
     getCourseEnrollments(courseId: string): Promise<({
         courseOffering: {
             course: {

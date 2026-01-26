@@ -237,6 +237,16 @@ export const instructorApi = {
     const response = await api.get('/admin/academic-calendar/instructor');
     return response.data;
   },
+
+  // ==================== STUDENT TRANSCRIPT ====================
+
+  /**
+   * Get student academic transcript by entry number
+   */
+  getStudentTranscript: async (entryNumber: string): Promise<any> => {
+    const response = await api.get(`/instructor/transcript/entry/${entryNumber}`);
+    return response.data;
+  },
 };
 
 export default instructorApi;

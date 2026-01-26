@@ -382,37 +382,66 @@ let AdminController = class AdminController {
             throw error;
         }
     }
-    getTranscriptByEntry(entryNumber) {
-        return {
-            student: {
-                id: "1",
-                name: "John Doe",
-                email: "john@example.com",
-                entryNumber: entryNumber,
-                branch: "Computer Science",
+    async getTranscriptByEntry(entryNumber) {
+        const student = await this.prisma.user.findUnique({
+            where: { entryNumber },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                entryNumber: true,
             },
-            cgpa: 8.5,
-            totalCredits: 120,
-            semesters: [
-                {
-                    semester: "Fall 2024",
-                    sgpa: 8.7,
-                    courses: [
-                        {
-                            code: "CS101",
-                            name: "Introduction to Programming",
-                            credits: 4,
-                            grade: "A",
+        });
+        if (!student) {
+            throw new common_1.NotFoundException(`Student with entry number ${entryNumber} not found`);
+        }
+        const enrollments = await this.prisma.enrollment.findMany({
+            where: { studentId: student.id },
+            include: {
+                courseOffering: {
+                    include: {
+                        course: {
+                            select: {
+                                id: true,
+                                code: true,
+                                name: true,
+                                credits: true,
+                            },
                         },
-                        {
-                            code: "CS102",
-                            name: "Data Structures",
-                            credits: 4,
-                            grade: "A-",
-                        },
-                    ],
+                        instructor: true,
+                    },
                 },
-            ],
+            },
+            orderBy: { createdAt: "asc" },
+        });
+        const mainDegree = enrollments.filter(e => e.enrollmentType === 'CREDIT');
+        const concentration = enrollments.filter(e => e.enrollmentType === 'CREDIT_CONCENTRATION');
+        const minor = enrollments.filter(e => e.enrollmentType === 'CREDIT_MINOR');
+        const formatEnrollments = (enr) => enr.map(e => ({
+            id: e.id,
+            status: e.status,
+            grade: e.grade,
+            enrollmentType: e.enrollmentType,
+            semester: e.courseOffering?.semester || 'Unknown',
+            courseOffering: {
+                course: {
+                    name: e.courseOffering?.course.name || 'Unknown',
+                    code: e.courseOffering?.course.code || 'Unknown',
+                    credits: e.courseOffering?.course.credits || 0,
+                },
+                instructor: {
+                    name: e.courseOffering?.instructor?.name || 'Unknown',
+                },
+            },
+        }));
+        return {
+            id: student.id,
+            name: student.name,
+            email: student.email,
+            entrynumber: student.entryNumber,
+            mainDegree: formatEnrollments(mainDegree),
+            concentration: formatEnrollments(concentration),
+            minor: formatEnrollments(minor),
         };
     }
     async getCourseEnrollments(courseId) {
@@ -570,7 +599,7 @@ __decorate([
     __param(0, (0, common_1.Param)("entryNumber")),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], AdminController.prototype, "getTranscriptByEntry", null);
 __decorate([
     (0, common_1.Get)("courses/:courseId/enrollments"),

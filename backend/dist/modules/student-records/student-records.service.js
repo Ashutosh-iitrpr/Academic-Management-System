@@ -159,6 +159,68 @@ let StudentRecordsService = class StudentRecordsService {
             },
         };
     }
+    async getStudentTranscriptByType(studentId) {
+        const student = await this.prisma.user.findUnique({
+            where: { id: studentId },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                entryNumber: true,
+            },
+        });
+        if (!student) {
+            throw new common_1.NotFoundException("Student not found");
+        }
+        const enrollments = await this.prisma.enrollment.findMany({
+            where: { studentId },
+            include: {
+                courseOffering: {
+                    include: {
+                        course: {
+                            select: {
+                                id: true,
+                                code: true,
+                                name: true,
+                                credits: true,
+                            },
+                        },
+                        instructor: true,
+                    },
+                },
+            },
+            orderBy: { createdAt: "asc" },
+        });
+        const mainDegree = enrollments.filter(e => e.enrollmentType === 'CREDIT');
+        const concentration = enrollments.filter(e => e.enrollmentType === 'CREDIT_CONCENTRATION');
+        const minor = enrollments.filter(e => e.enrollmentType === 'CREDIT_MINOR');
+        const formatEnrollments = (enr) => enr.map(e => ({
+            id: e.id,
+            status: e.status,
+            grade: e.grade,
+            enrollmentType: e.enrollmentType,
+            semester: e.courseOffering?.semester || 'Unknown',
+            courseOffering: {
+                course: {
+                    name: e.courseOffering?.course.name || 'Unknown',
+                    code: e.courseOffering?.course.code || 'Unknown',
+                    credits: e.courseOffering?.course.credits || 0,
+                },
+                instructor: {
+                    name: e.courseOffering?.instructor?.name || 'Unknown',
+                },
+            },
+        }));
+        return {
+            id: student.id,
+            name: student.name,
+            email: student.email,
+            entrynumber: student.entryNumber,
+            mainDegree: formatEnrollments(mainDegree),
+            concentration: formatEnrollments(concentration),
+            minor: formatEnrollments(minor),
+        };
+    }
     async getStudentRecordBySemester(studentId, semester) {
         const student = await this.prisma.user.findUnique({
             where: { id: studentId },

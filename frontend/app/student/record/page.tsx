@@ -13,12 +13,9 @@ import {
   TableHead,
   TableRow,
   Chip,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   Alert,
-  Divider,
-  Paper,
+  Button,
+  CircularProgress,
 } from '@mui/material';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import ProtectedRoute from '@/lib/routes/ProtectedRoute';
@@ -29,54 +26,34 @@ import studentApi from '@/lib/api/studentApi';
 import { toast } from 'sonner';
 
 // Icons
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SchoolIcon from '@mui/icons-material/School';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import DownloadIcon from '@mui/icons-material/Download';
 
-interface CourseSummary {
-  courseCode: string;
-  courseName: string;
-  credits: number;
-  enrollmentType: string;
+interface Enrollment {
+  id: string;
   status: string;
   grade?: string;
-  instructor: string;
-}
-
-interface SemesterBucket {
-  ongoing: CourseSummary[];
-  completed: CourseSummary[];
-  dropped: CourseSummary[];
-  creditsEarned: number;
-  creditsRegistered: number;
-}
-
-interface StudentRecordData {
-  student: {
-    id?: string;
-    name: string;
-    entryNumber: string;
-    branch?: string;
-    admissionYear?: string;
-  };
-  semesterWiseEnrollments: Record<string, SemesterBucket>;
-  summary: {
-    cumulativeCreditsCompleted: number;
-    creditsOngoing: number;
-    totalEnrollments: number;
-    cgpa: number;
-    currentSemesterGPA: number;
+  enrollmentType?: string;
+  semester?: string;
+  courseOffering: {
+    course: {
+      name: string;
+      code: string;
+      credits: number;
+    };
+    instructor: { name: string };
   };
 }
 
 const StudentRecordPage = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [recordData, setRecordData] = useState<StudentRecordData | null>(null);
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [expandedSemester, setExpandedSemester] = useState<string | false>(false);
+  const [downloadLoading, setDownloadLoading] = useState(false);
 
   useEffect(() => {
     fetchStudentRecord();
@@ -86,14 +63,14 @@ const StudentRecordPage = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await studentApi.getStudentRecord();
-      setRecordData(data);
-
-      // Auto-expand the first semester
-      const semesters = Object.keys(data.semesterWiseEnrollments);
-      if (semesters.length > 0) {
-        setExpandedSemester(semesters[semesters.length - 1]); // Most recent semester
-      }
+      const data = await studentApi.getStudentTranscriptByType();
+      // Combine all enrollments from the response
+      const allEnrollments = [
+        ...(data.mainDegree || []),
+        ...(data.concentration || []),
+        ...(data.minor || []),
+      ];
+      setEnrollments(allEnrollments);
     } catch (err: any) {
       console.error('Failed to fetch student record:', err);
       setError(err.response?.data?.message || 'Failed to load student record');
@@ -103,100 +80,245 @@ const StudentRecordPage = () => {
     }
   };
 
-  const handleAccordionChange = (semester: string) => (event: React.SyntheticEvent, isExpanded: boolean) => {
-    setExpandedSemester(isExpanded ? semester : false);
-  };
-
-  const getGradeColor = (grade: string): string => {
-    const gradeColors: Record<string, string> = {
-      'A': '#4caf50',
-      'A_MINUS': '#66bb6a',
-      'B': '#81c784',
-      'B_MINUS': '#aed581',
-      'C': '#ffeb3b',
-      'C_MINUS': '#fdd835',
-      'D': '#ff9800',
-      'E': '#ff5722',
-      'F': '#f44336',
+  const getGradeColor = (grade?: string) => {
+    if (!grade) return '#999';
+    const colors: { [key: string]: string } = {
+      'A': '#2E7D32',
+      'B': '#1976D2',
+      'C': '#F57C00',
+      'D': '#D32F2F',
+      'F': '#C62828',
     };
-    return gradeColors[grade] || '#999';
+    return colors[grade.charAt(0)] || '#999';
   };
 
-  const getStatusChipColor = (
-    status: string
-  ): 'default' | 'primary' | 'success' | 'warning' | 'error' | 'info' => {
-    switch (status) {
-      case 'COMPLETED':
-        return 'success';
-      case 'ENROLLED':
-        return 'info';
-      case 'AUDIT':
-        return 'primary';
-      case 'DROPPED':
-        return 'default';
-      default:
-        return 'default';
-    }
-  };
+  const calculateGPA = (enrollments?: Enrollment[]) => {
+    if (!enrollments || enrollments.length === 0) return 0;
+    const completedEnrollments = enrollments.filter(
+      (e) => e.status === 'COMPLETED' && e.grade
+    );
+    if (completedEnrollments.length === 0) return 0;
 
-  const calculateSemesterGPA = (courses: CourseSummary[]): number => {
-    const GRADE_POINTS: Record<string, number> = {
-      A: 10,
-      A_MINUS: 9,
-      B: 8,
-      B_MINUS: 7,
-      C: 6,
-      C_MINUS: 5,
-      D: 4,
-      E: 2,
-      F: 0,
+    const gradePoints: { [key: string]: number } = {
+      A: 4.0,
+      B: 3.0,
+      C: 2.0,
+      D: 1.0,
+      F: 0.0,
     };
 
-    let totalPoints = 0;
-    let totalCredits = 0;
+    const totalPoints = completedEnrollments.reduce((sum, e) => {
+      const gradeKey = e.grade?.charAt(0) || 'F';
+      return sum + (gradePoints[gradeKey] || 0);
+    }, 0);
 
-    courses.forEach((course) => {
-      if (course.grade && GRADE_POINTS[course.grade] !== undefined) {
-        totalPoints += GRADE_POINTS[course.grade] * course.credits;
-        totalCredits += course.credits;
+    return (totalPoints / completedEnrollments.length).toFixed(2);
+  };
+
+  const calculateCredits = (enrollments?: Enrollment[]) => {
+    if (!enrollments || enrollments.length === 0) return 0;
+    return enrollments.reduce((sum, e) => {
+      if (e.status === 'COMPLETED') {
+        return sum + e.courseOffering.course.credits;
       }
+      return sum;
+    }, 0);
+  };
+
+  const groupBySemester = (enrollments?: Enrollment[]) => {
+    if (!enrollments || enrollments.length === 0) return {};
+
+    const grouped: { [key: string]: Enrollment[] } = {};
+    enrollments.forEach((enrollment) => {
+      const semester = enrollment.semester || 'Unknown';
+      if (!grouped[semester]) {
+        grouped[semester] = [];
+      }
+      grouped[semester].push(enrollment);
     });
 
-    return totalCredits > 0 ? parseFloat((totalPoints / totalCredits).toFixed(2)) : 0;
+    return grouped;
   };
 
-  const calculateSemesterGPAByType = (courses: CourseSummary[], enrollmentType: string): number => {
-    const GRADE_POINTS: Record<string, number> = {
-      A: 10,
-      A_MINUS: 9,
-      B: 8,
-      B_MINUS: 7,
-      C: 6,
-      C_MINUS: 5,
-      D: 4,
-      E: 2,
-      F: 0,
+  const handleDownloadTranscript = () => {
+    if (enrollments.length === 0) {
+      toast.error('No enrollments to download');
+      return;
+    }
+
+    const mainDegree = enrollments.filter(e => e.enrollmentType === 'CREDIT');
+    const concentration = enrollments.filter(e => e.enrollmentType === 'CREDIT_CONCENTRATION');
+    const minor = enrollments.filter(e => e.enrollmentType === 'CREDIT_MINOR');
+
+    // Create HTML content for PDF
+    let htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Student Transcript</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            color: #333;
+          }
+          h1 {
+            text-align: center;
+            color: #8B3A3A;
+            margin-bottom: 20px;
+          }
+          .student-info {
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+          }
+          .student-info p {
+            margin: 5px 0;
+          }
+          .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            padding: 8px 12px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+          }
+          .section-main { background-color: #8B3A3A; }
+          .section-concentration { background-color: #1976D2; }
+          .section-minor { background-color: #F57C00; }
+          .section-stats {
+            font-size: 12px;
+            margin-bottom: 10px;
+            color: #666;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+            font-size: 12px;
+          }
+          th {
+            background-color: #e0e0e0;
+            padding: 8px;
+            text-align: left;
+            font-weight: bold;
+            border: 1px solid #999;
+          }
+          td {
+            padding: 6px 8px;
+            border: 1px solid #ddd;
+          }
+          tr:nth-child(even) {
+            background-color: #f9f9f9;
+          }
+          .semester-header {
+            font-weight: bold;
+            background-color: #f0f0f0;
+            padding: 8px;
+            margin-top: 10px;
+            border-left: 4px solid #8B3A3A;
+          }
+          .empty-section {
+            color: #999;
+            font-style: italic;
+            padding: 10px;
+          }
+        </style>
+      </head>
+      <body>
+        <h1>STUDENT TRANSCRIPT</h1>
+        
+        <div class="student-info">
+          <p><strong>Name:</strong> ${user?.name || 'N/A'}</p>
+          <p><strong>Entry Number:</strong> ${user?.entryNumber || 'N/A'}</p>
+          <p><strong>Email:</strong> ${user?.email || 'N/A'}</p>
+          <p><strong>Date Generated:</strong> ${new Date().toLocaleDateString()}</p>
+        </div>
+    `;
+
+    const addSection = (
+      title: string,
+      sectionEnrollments: Enrollment[],
+      className: string
+    ) => {
+      if (sectionEnrollments.length === 0) {
+        htmlContent += `<div class="section-title ${className}">${title}</div>`;
+        htmlContent += `<div class="empty-section">No enrollments in this category</div>`;
+        return;
+      }
+
+      htmlContent += `<div class="section-title ${className}">${title}</div>`;
+      htmlContent += `<div class="section-stats">GPA: ${calculateGPA(
+        sectionEnrollments
+      )} | Credits Earned: ${calculateCredits(sectionEnrollments)}</div>`;
+
+      const grouped = groupBySemester(sectionEnrollments);
+      const semesters = Object.keys(grouped).sort();
+
+      semesters.forEach((semester) => {
+        htmlContent += `<div class="semester-header">${semester}</div>`;
+        htmlContent += `
+          <table>
+            <thead>
+              <tr>
+                <th>Course Code</th>
+                <th>Course Name</th>
+                <th>Credits</th>
+                <th>Instructor</th>
+                <th>Status</th>
+                <th>Grade</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+
+        grouped[semester].forEach((e) => {
+          htmlContent += `
+            <tr>
+              <td>${e.courseOffering.course.code}</td>
+              <td>${e.courseOffering.course.name}</td>
+              <td>${e.courseOffering.course.credits}</td>
+              <td>${e.courseOffering.instructor.name}</td>
+              <td>${e.status}</td>
+              <td>${e.grade || 'Pending'}</td>
+            </tr>
+          `;
+        });
+
+        htmlContent += `
+            </tbody>
+          </table>
+        `;
+      });
     };
 
-    let totalPoints = 0;
-    let totalCredits = 0;
+    addSection('MAIN DEGREE', mainDegree, 'section-main');
+    addSection('CONCENTRATION', concentration, 'section-concentration');
+    addSection('MINOR', minor, 'section-minor');
 
-    courses
-      .filter((course) => course.enrollmentType === enrollmentType)
-      .forEach((course) => {
-        if (course.grade && GRADE_POINTS[course.grade] !== undefined) {
-          totalPoints += GRADE_POINTS[course.grade] * course.credits;
-          totalCredits += course.credits;
-        }
-      });
+    htmlContent += `
+      </body>
+      </html>
+    `;
 
-    return totalCredits > 0 ? parseFloat((totalPoints / totalCredits).toFixed(2)) : 0;
+    // Open in new window for printing to PDF
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      printWindow.onload = () => {
+        printWindow.print();
+      };
+    }
   };
 
   if (loading) {
     return (
       <ProtectedRoute requiredRole="STUDENT">
-        <DashboardLayout pageTitle="Academic Record">
+        <DashboardLayout pageTitle="Student Transcript">
           <LoadingSkeleton type="grid" count={4} />
           <Box sx={{ mt: 3 }}>
             <LoadingSkeleton type="card" count={3} />
@@ -206,456 +328,247 @@ const StudentRecordPage = () => {
     );
   }
 
-  if (error || !recordData) {
+  if (error) {
     return (
       <ProtectedRoute requiredRole="STUDENT">
-        <DashboardLayout pageTitle="Academic Record">
-          <Alert severity="error">{error || 'Failed to load record data'}</Alert>
+        <DashboardLayout pageTitle="Student Transcript">
+          <Alert severity="error">{error}</Alert>
         </DashboardLayout>
       </ProtectedRoute>
     );
   }
 
-  // Sort semesters in reverse chronological order (most recent first)
-  const sortedSemesters = Object.keys(recordData.semesterWiseEnrollments).sort().reverse();
+  const mainDegree = enrollments.filter(e => e.enrollmentType === 'CREDIT');
+  const concentration = enrollments.filter(e => e.enrollmentType === 'CREDIT_CONCENTRATION');
+  const minor = enrollments.filter(e => e.enrollmentType === 'CREDIT_MINOR');
 
   return (
     <ProtectedRoute requiredRole="STUDENT">
-      <DashboardLayout pageTitle="Academic Record">
-        <Box>
+      <DashboardLayout pageTitle="Student Transcript">
+        <Box sx={{ mb: 4 }}>
           {/* Header */}
-          <Box sx={{ mb: 4 }}>
-            <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
-              Academic Record
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+            <SchoolIcon sx={{ fontSize: 28, color: '#8B3A3A' }} />
+            <Typography variant="h5" sx={{ fontWeight: 700, color: '#1a1a1a' }}>
+              Student Transcript
             </Typography>
-            <Typography variant="body2" sx={{ color: '#666', mb: 2 }}>
-              Complete academic history with semester-wise performance
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-              <Chip
-                label={`Entry Number: ${recordData.student.entryNumber}`}
-                variant="outlined"
-                color="primary"
-              />
-              {recordData.student.branch && (
-                <Chip label={`Branch: ${recordData.student.branch}`} variant="outlined" color="primary" />
-              )}
-              {recordData.student.admissionYear && (
-                <Chip
-                  label={`Admission Year: ${recordData.student.admissionYear}`}
-                  variant="outlined"
-                  color="primary"
-                />
-              )}
-            </Box>
+            <Button
+              startIcon={downloadLoading ? <CircularProgress size={20} /> : <DownloadIcon />}
+              variant="contained"
+              sx={{ backgroundColor: '#8B3A3A', ml: 'auto' }}
+              onClick={handleDownloadTranscript}
+              disabled={downloadLoading}
+            >
+              Download PDF
+            </Button>
           </Box>
 
           {/* Summary Stats */}
-          <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid container spacing={3} sx={{ mb: 3 }}>
             <Grid item xs={12} sm={6} md={3}>
-              <StatCard
-                title="Main GPA"
-                value={recordData.summary.mainGPA.toFixed(2)}
-                icon={<TrendingUpIcon />}
-                color="primary"
-                subtitle="Core Courses"
-              />
+              <Card>
+                <CardContent>
+                  <Typography color="textSecondary" gutterBottom>
+                    Overall GPA
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                    {calculateGPA([...mainDegree, ...concentration, ...minor])}
+                  </Typography>
+                </CardContent>
+              </Card>
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
-              <StatCard
-                title="Semester GPA"
-                value={recordData.summary.currentSemesterGPA.toFixed(2)}
-                icon={<TrendingUpIcon />}
-                color="success"
-                subtitle="Current Semester"
-              />
+              <Card>
+                <CardContent>
+                  <Typography color="textSecondary" gutterBottom>
+                    Total Credits Earned
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                    {calculateCredits([...mainDegree, ...concentration, ...minor])}
+                  </Typography>
+                </CardContent>
+              </Card>
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
-              <StatCard
-                title="Credits Completed"
-                value={recordData.summary.cumulativeCreditsCompleted}
-                icon={<CheckCircleIcon />}
-                color="info"
-                subtitle="Total Credits Earned"
-              />
+              <Card>
+                <CardContent>
+                  <Typography color="textSecondary" gutterBottom>
+                    Total Courses
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                    {enrollments.length}
+                  </Typography>
+                </CardContent>
+              </Card>
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
-              <StatCard
-                title="Ongoing Credits"
-                value={recordData.summary.creditsOngoing}
-                icon={<AssignmentIcon />}
-                color="warning"
-                subtitle="Current Semester"
-              />
+              <Card>
+                <CardContent>
+                  <Typography color="textSecondary" gutterBottom>
+                    Completed
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                    {enrollments.filter(e => e.status === 'COMPLETED').length}
+                  </Typography>
+                </CardContent>
+              </Card>
             </Grid>
           </Grid>
 
-          {/* Concentration and Minor GPAs if they exist */}
-          {(recordData.summary.concentrationGPA > 0 || recordData.summary.minorGPA > 0) && (
-            <Grid container spacing={3} sx={{ mb: 4 }}>
-              {recordData.summary.concentrationGPA > 0 && (
-                <Grid item xs={12} sm={6}>
-                  <StatCard
-                    title="Concentration GPA"
-                    value={recordData.summary.concentrationGPA.toFixed(2)}
-                    icon={<TrendingUpIcon />}
-                    color="warning"
-                    subtitle="Concentration Courses"
-                  />
-                </Grid>
-              )}
-              {recordData.summary.minorGPA > 0 && (
-                <Grid item xs={12} sm={6}>
-                  <StatCard
-                    title="Minor GPA"
-                    value={recordData.summary.minorGPA.toFixed(2)}
-                    icon={<TrendingUpIcon />}
-                    color="error"
-                    subtitle="Minor Courses"
-                  />
-                </Grid>
-              )}
-            </Grid>
-          )}
+          {/* Helper Component for Enrollment Table by Semester */}
+          {(() => {
+            const renderEnrollmentTable = (
+              enrollmentList: Enrollment[],
+              typeLabel: string,
+              typeColor: string
+            ) => {
+              if (enrollmentList.length === 0) {
+                return null;
+              }
 
-          {/* Semester-wise Records */}
-          <Card sx={{ mb: 4, border: '1px solid #e0e0e0' }}>
-            <CardContent>
-              <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
-                Semester-wise Performance
-              </Typography>
+              const grouped = groupBySemester(enrollmentList);
+              const semesters = Object.keys(grouped).sort();
 
-              {sortedSemesters.length === 0 ? (
-                <Alert severity="info">No enrollment records found.</Alert>
-              ) : (
-                sortedSemesters.map((semester) => {
-                  const semesterData = recordData.semesterWiseEnrollments[semester];
-                  const allCourses = [
-                    ...semesterData.ongoing,
-                    ...semesterData.completed,
-                    ...semesterData.dropped,
-                  ];
-                  const mainGPA = calculateSemesterGPAByType(semesterData.completed, 'CREDIT');
-                  const concentrationGPA = calculateSemesterGPAByType(semesterData.completed, 'CREDIT_CONCENTRATION');
-                  const minorGPA = calculateSemesterGPAByType(semesterData.completed, 'CREDIT_MINOR');
-
-                  return (
-                    <Accordion
-                      key={semester}
-                      expanded={expandedSemester === semester}
-                      onChange={handleAccordionChange(semester)}
+              return (
+                <Box sx={{ mb: 3 }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 2,
+                      mb: 2,
+                      pb: 2,
+                      borderBottom: `3px solid ${typeColor}`,
+                    }}
+                  >
+                    <Box
                       sx={{
-                        mb: 2,
-                        border: '1px solid #e0e0e0',
-                        '&:before': { display: 'none' },
-                        boxShadow: 'none',
+                        width: 12,
+                        height: 12,
+                        borderRadius: '50%',
+                        backgroundColor: typeColor,
                       }}
-                    >
-                      <AccordionSummary
-                        expandIcon={<ExpandMoreIcon />}
-                        sx={{
-                          backgroundColor: '#f5f5f5',
-                          '&:hover': { backgroundColor: '#eeeeee' },
-                        }}
-                      >
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', pr: 2 }}>
-                          <Box>
-                            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                              {semester}
-                            </Typography>
-                            <Typography variant="caption" sx={{ color: '#666' }}>
-                              {allCourses.length} course(s) • {semesterData.creditsEarned} credits earned •{' '}
-                              {semesterData.creditsRegistered} credits registered
-                            </Typography>
-                          </Box>
-                          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-                            {mainGPA > 0 && (
-                              <Chip
-                                label={`Main GPA: ${mainGPA.toFixed(2)}`}
-                                color="primary"
-                                size="small"
-                                variant="outlined"
-                              />
-                            )}
-                            {concentrationGPA > 0 && (
-                              <Chip
-                                label={`Concentration GPA: ${concentrationGPA.toFixed(2)}`}
-                                color="secondary"
-                                size="small"
-                                variant="outlined"
-                              />
-                            )}
-                            {minorGPA > 0 && (
-                              <Chip
-                                label={`Minor GPA: ${minorGPA.toFixed(2)}`}
-                                color="info"
-                                size="small"
-                                variant="outlined"
-                              />
-                            )}
-                            {semesterData.ongoing.length > 0 && (
-                              <Chip
-                                label={`${semesterData.ongoing.length} Ongoing`}
-                                color="info"
-                                size="small"
-                              />
-                            )}
-                            {semesterData.completed.length > 0 && (
-                              <Chip
-                                label={`${semesterData.completed.length} Completed`}
-                                color="success"
-                                size="small"
-                              />
-                            )}
-                          </Box>
+                    />
+                    <Typography variant="h6" sx={{ fontWeight: 700, color: typeColor }}>
+                      {typeLabel}
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary" sx={{ ml: 'auto' }}>
+                      GPA: {calculateGPA(enrollmentList)} | Credits: {calculateCredits(enrollmentList)}
+                    </Typography>
+                  </Box>
+
+                  {semesters.map((semester) => (
+                    <Card key={semester} sx={{ mb: 2, ml: 2 }}>
+                      <CardContent sx={{ pb: 0, '&:last-child': { pb: 2 } }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
+                          {semester}
+                        </Typography>
+                        <Box sx={{ overflow: 'auto' }}>
+                          <Table size="small">
+                            <TableHead>
+                              <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                                <TableCell sx={{ fontWeight: 700, fontSize: '0.85rem' }}>
+                                  Course Code
+                                </TableCell>
+                                <TableCell sx={{ fontWeight: 700, fontSize: '0.85rem' }}>
+                                  Course Name
+                                </TableCell>
+                                <TableCell sx={{ fontWeight: 700, fontSize: '0.85rem' }}>
+                                  Credits
+                                </TableCell>
+                                <TableCell sx={{ fontWeight: 700, fontSize: '0.85rem' }}>
+                                  Instructor
+                                </TableCell>
+                                <TableCell sx={{ fontWeight: 700, fontSize: '0.85rem' }}>
+                                  Status
+                                </TableCell>
+                                <TableCell sx={{ fontWeight: 700, fontSize: '0.85rem' }}>
+                                  Grade
+                                </TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {grouped[semester]?.map((enrollment) => (
+                                <TableRow
+                                  key={enrollment.id}
+                                  sx={{ '&:hover': { backgroundColor: '#f9f9f9' } }}
+                                >
+                                  <TableCell sx={{ fontSize: '0.9rem' }}>
+                                    <Typography sx={{ fontWeight: 700, color: typeColor }}>
+                                      {enrollment.courseOffering.course.code}
+                                    </Typography>
+                                  </TableCell>
+                                  <TableCell sx={{ fontSize: '0.9rem' }}>
+                                    <Typography sx={{ fontWeight: 500 }}>
+                                      {enrollment.courseOffering.course.name}
+                                    </Typography>
+                                  </TableCell>
+                                  <TableCell sx={{ fontSize: '0.9rem' }}>
+                                    <Chip
+                                      label={`${enrollment.courseOffering.course.credits}`}
+                                      size="small"
+                                      variant="outlined"
+                                    />
+                                  </TableCell>
+                                  <TableCell sx={{ fontSize: '0.9rem' }}>
+                                    {enrollment.courseOffering.instructor.name}
+                                  </TableCell>
+                                  <TableCell sx={{ fontSize: '0.9rem' }}>
+                                    <Chip
+                                      label={enrollment.status}
+                                      size="small"
+                                      color={
+                                        enrollment.status === 'COMPLETED'
+                                          ? 'success'
+                                          : enrollment.status === 'ACTIVE'
+                                          ? 'info'
+                                          : 'default'
+                                      }
+                                    />
+                                  </TableCell>
+                                  <TableCell sx={{ fontSize: '0.9rem' }}>
+                                    {enrollment.grade ? (
+                                      <Chip
+                                        label={enrollment.grade.replace('_MINUS', '-')}
+                                        sx={{
+                                          backgroundColor: getGradeColor(enrollment.grade),
+                                          color: '#fff',
+                                          fontWeight: 700,
+                                        }}
+                                        size="small"
+                                      />
+                                    ) : (
+                                      <Typography sx={{ fontSize: '0.85rem', color: '#999' }}>
+                                        Pending
+                                      </Typography>
+                                    )}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
                         </Box>
-                      </AccordionSummary>
-                      <AccordionDetails>
-                        {/* Completed Courses */}
-                        {semesterData.completed.length > 0 && (
-                          <Box sx={{ mb: 3 }}>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, color: '#388e3c' }}>
-                              Completed Courses ({semesterData.completed.length})
-                            </Typography>
-                            <Table size="small">
-                              <TableHead>
-                                <TableRow sx={{ backgroundColor: '#f9f9f9' }}>
-                                  <TableCell sx={{ fontWeight: 600 }}>Course</TableCell>
-                                  <TableCell sx={{ fontWeight: 600 }} align="center">
-                                    Credits
-                                  </TableCell>
-                                  <TableCell sx={{ fontWeight: 600 }}>Instructor</TableCell>
-                                  <TableCell sx={{ fontWeight: 600 }}>Type</TableCell>
-                                  <TableCell sx={{ fontWeight: 600 }} align="center">
-                                    Grade
-                                  </TableCell>
-                                </TableRow>
-                              </TableHead>
-                              <TableBody>
-                                {semesterData.completed.map((course, idx) => (
-                                  <TableRow key={idx} hover>
-                                    <TableCell>
-                                      <Box>
-                                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                                          {course.courseCode}
-                                        </Typography>
-                                        <Typography variant="caption" sx={{ color: '#666' }}>
-                                          {course.courseName}
-                                        </Typography>
-                                      </Box>
-                                    </TableCell>
-                                    <TableCell align="center">{course.credits}</TableCell>
-                                    <TableCell>{course.instructor}</TableCell>
-                                    <TableCell>
-                                      <Chip
-                                        label={course.enrollmentType.replace('_', ' ')}
-                                        size="small"
-                                        variant="outlined"
-                                      />
-                                    </TableCell>
-                                    <TableCell align="center">
-                                      {course.grade ? (
-                                        <Chip
-                                          label={course.grade.replace('_MINUS', '-')}
-                                          size="small"
-                                          sx={{
-                                            backgroundColor: getGradeColor(course.grade),
-                                            color: '#fff',
-                                            fontWeight: 600,
-                                          }}
-                                        />
-                                      ) : (
-                                        '-'
-                                      )}
-                                    </TableCell>
-                                  </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-                          </Box>
-                        )}
-
-                        {/* Ongoing Courses */}
-                        {semesterData.ongoing.length > 0 && (
-                          <Box sx={{ mb: 3 }}>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, color: '#1976d2' }}>
-                              Ongoing Courses ({semesterData.ongoing.length})
-                            </Typography>
-                            <Table size="small">
-                              <TableHead>
-                                <TableRow sx={{ backgroundColor: '#f9f9f9' }}>
-                                  <TableCell sx={{ fontWeight: 600 }}>Course</TableCell>
-                                  <TableCell sx={{ fontWeight: 600 }} align="center">
-                                    Credits
-                                  </TableCell>
-                                  <TableCell sx={{ fontWeight: 600 }}>Instructor</TableCell>
-                                  <TableCell sx={{ fontWeight: 600 }}>Type</TableCell>
-                                  <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                                </TableRow>
-                              </TableHead>
-                              <TableBody>
-                                {semesterData.ongoing.map((course, idx) => (
-                                  <TableRow key={idx} hover>
-                                    <TableCell>
-                                      <Box>
-                                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                                          {course.courseCode}
-                                        </Typography>
-                                        <Typography variant="caption" sx={{ color: '#666' }}>
-                                          {course.courseName}
-                                        </Typography>
-                                      </Box>
-                                    </TableCell>
-                                    <TableCell align="center">{course.credits}</TableCell>
-                                    <TableCell>{course.instructor}</TableCell>
-                                    <TableCell>
-                                      <Chip
-                                        label={course.enrollmentType.replace('_', ' ')}
-                                        size="small"
-                                        variant="outlined"
-                                      />
-                                    </TableCell>
-                                    <TableCell>
-                                      <Chip
-                                        label={course.status}
-                                        color={getStatusChipColor(course.status)}
-                                        size="small"
-                                      />
-                                    </TableCell>
-                                  </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-                          </Box>
-                        )}
-
-                        {/* Dropped Courses */}
-                        {semesterData.dropped.length > 0 && (
-                          <Box>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, color: '#757575' }}>
-                              Dropped Courses ({semesterData.dropped.length})
-                            </Typography>
-                            <Table size="small">
-                              <TableHead>
-                                <TableRow sx={{ backgroundColor: '#f9f9f9' }}>
-                                  <TableCell sx={{ fontWeight: 600 }}>Course</TableCell>
-                                  <TableCell sx={{ fontWeight: 600 }} align="center">
-                                    Credits
-                                  </TableCell>
-                                  <TableCell sx={{ fontWeight: 600 }}>Instructor</TableCell>
-                                  <TableCell sx={{ fontWeight: 600 }}>Type</TableCell>
-                                </TableRow>
-                              </TableHead>
-                              <TableBody>
-                                {semesterData.dropped.map((course, idx) => (
-                                  <TableRow key={idx} hover sx={{ opacity: 0.6 }}>
-                                    <TableCell>
-                                      <Box>
-                                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                                          {course.courseCode}
-                                        </Typography>
-                                        <Typography variant="caption" sx={{ color: '#666' }}>
-                                          {course.courseName}
-                                        </Typography>
-                                      </Box>
-                                    </TableCell>
-                                    <TableCell align="center">{course.credits}</TableCell>
-                                    <TableCell>{course.instructor}</TableCell>
-                                    <TableCell>
-                                      <Chip
-                                        label={course.enrollmentType.replace('_', ' ')}
-                                        size="small"
-                                        variant="outlined"
-                                      />
-                                    </TableCell>
-                                  </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-                          </Box>
-                        )}
-
-                        {/* Semester Summary */}
-                        <Divider sx={{ my: 2 }} />
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', px: 1, flexWrap: 'wrap', gap: 2 }}>
-                          <Typography variant="body2" sx={{ color: '#666' }}>
-                            Credits Earned: <strong>{semesterData.creditsEarned}</strong>
-                          </Typography>
-                          <Typography variant="body2" sx={{ color: '#666' }}>
-                            Credits Registered: <strong>{semesterData.creditsRegistered}</strong>
-                          </Typography>
-                          {mainGPA > 0 && (
-                            <Typography variant="body2" sx={{ color: '#1976d2' }}>
-                              Main GPA: <strong>{mainGPA.toFixed(2)}</strong>
-                            </Typography>
-                          )}
-                          {concentrationGPA > 0 && (
-                            <Typography variant="body2" sx={{ color: '#9c27b0' }}>
-                              Concentration GPA: <strong>{concentrationGPA.toFixed(2)}</strong>
-                            </Typography>
-                          )}
-                          {minorGPA > 0 && (
-                            <Typography variant="body2" sx={{ color: '#0288d1' }}>
-                              Minor GPA: <strong>{minorGPA.toFixed(2)}</strong>
-                            </Typography>
-                          )}
-                        </Box>
-                      </AccordionDetails>
-                    </Accordion>
-                  );
-                })
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Overall Summary */}
-          <Paper sx={{ p: 3, border: '1px solid #e0e0e0' }}>
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-              Overall Summary
-            </Typography>
-            <Grid container spacing={3}>
-              <Grid item xs={12} sm={6} md={3}>
-                <Box>
-                  <Typography variant="body2" sx={{ color: '#666', mb: 0.5 }}>
-                    Total Enrollments
-                  </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 700, color: '#1976d2' }}>
-                    {recordData.summary.totalEnrollments}
-                  </Typography>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </Box>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <Box>
-                  <Typography variant="body2" sx={{ color: '#666', mb: 0.5 }}>
-                    Credits Completed
-                  </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 700, color: '#388e3c' }}>
-                    {recordData.summary.cumulativeCreditsCompleted}
-                  </Typography>
-                </Box>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <Box>
-                  <Typography variant="body2" sx={{ color: '#666', mb: 0.5 }}>
-                    Ongoing Credits
-                  </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 700, color: '#f57c00' }}>
-                    {recordData.summary.creditsOngoing}
-                  </Typography>
-                </Box>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <Box>
-                  <Typography variant="body2" sx={{ color: '#666', mb: 0.5 }}>
-                    Cumulative GPA
-                  </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 700, color: '#7b1fa2' }}>
-                    {recordData.summary.cgpa.toFixed(2)}
-                  </Typography>
-                </Box>
-              </Grid>
-            </Grid>
-          </Paper>
+              );
+            };
+
+            return (
+              <>
+                {renderEnrollmentTable(mainDegree, 'Main Degree', '#8B3A3A')}
+                {renderEnrollmentTable(concentration, 'Concentration', '#1976D2')}
+                {renderEnrollmentTable(minor, 'Minor', '#F57C00')}
+
+                {(mainDegree.length + concentration.length + minor.length) === 0 && (
+                  <Box sx={{ p: 3, textAlign: 'center' }}>
+                    <Typography color="textSecondary">No enrollments found</Typography>
+                  </Box>
+                )}
+              </>
+            );
+          })()}
         </Box>
       </DashboardLayout>
     </ProtectedRoute>

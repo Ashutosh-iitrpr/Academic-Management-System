@@ -8,6 +8,7 @@ import { AcademicCalendarService } from "./services/academic-calendar.service";
     AcademicCalendarService,
   ],
   exports: [
+    PrismaService,
     AcademicCalendarService,
   ],
 })

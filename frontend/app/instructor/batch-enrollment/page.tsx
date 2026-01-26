@@ -189,7 +189,7 @@ const BatchEnrollment = () => {
                 Batch Enrollment
               </Typography>
             </Box>
-            <Typography variant="body2" sx={{ color: '#666' }}>
+            <Typography variant="body2" sx={{ color: '#666' }} component="div">
               Automatically enroll all students from a specific batch and branch into your course
             </Typography>
           </Box>
@@ -234,7 +234,7 @@ const BatchEnrollment = () => {
                     <Typography variant="body2" sx={{ color: '#666', mb: 1 }}>
                       <strong>Batch Year:</strong> {formData.batchYear}
                     </Typography>
-                    <Typography variant="body2" sx={{ color: '#666' }}>
+                    <Typography variant="body2" sx={{ color: '#666', mb: 1 }} component="div">
                       <strong>Enrollment Type:</strong>{' '}
                       <Chip
                         label={formData.enrollmentType}

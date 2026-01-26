@@ -19,6 +19,13 @@ export class StudentRecordsController {
     );
   }
 
+  @Get("transcript-by-type")
+  getStudentTranscriptByType(@Req() req) {
+    return this.studentRecordsService.getStudentTranscriptByType(
+      req.user.userId,
+    );
+  }
+
     @Get("semester/:semester")
     getStudentRecordBySemester(
     @Req() req,

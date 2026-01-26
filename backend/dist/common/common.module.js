@@ -20,6 +20,7 @@ exports.CommonModule = CommonModule = __decorate([
             academic_calendar_service_1.AcademicCalendarService,
         ],
         exports: [
+            prisma_service_1.PrismaService,
             academic_calendar_service_1.AcademicCalendarService,
         ],
     })

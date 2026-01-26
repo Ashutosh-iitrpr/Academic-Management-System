@@ -184,7 +184,7 @@ export const studentApi = {
    */
   requestEnrollment: async (
     offeringId: string,
-    enrollmentType: 'CREDIT' | 'CREDIT_FOR_MINOR' | 'CREDIT_FOR_CONCENTRATION' = 'CREDIT'
+    enrollmentType: 'CREDIT' | 'CREDIT_CONCENTRATION' | 'CREDIT_MINOR' = 'CREDIT'
   ): Promise<{ status: string }> => {
     const response = await api.post('/student/enrollments', {
       courseOfferingId: offeringId,
@@ -215,6 +215,14 @@ export const studentApi = {
    */
   getStudentRecord: async (): Promise<StudentRecord> => {
     const response = await api.get('/student/record');
+    return response.data;
+  },
+
+  /**
+   * Get student transcript separated by enrollment type (new structure)
+   */
+  getStudentTranscriptByType: async () => {
+    const response = await api.get('/student/record/transcript-by-type');
     return response.data;
   },
 

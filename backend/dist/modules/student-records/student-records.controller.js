@@ -27,6 +27,9 @@ let StudentRecordsController = class StudentRecordsController {
     getStudentRecord(req) {
         return this.studentRecordsService.getStudentRecord(req.user.userId);
     }
+    getStudentTranscriptByType(req) {
+        return this.studentRecordsService.getStudentTranscriptByType(req.user.userId);
+    }
     getStudentRecordBySemester(req, semester) {
         return this.studentRecordsService.getStudentRecordBySemester(req.user.userId, semester);
     }
@@ -48,6 +51,13 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], StudentRecordsController.prototype, "getStudentRecord", null);
+__decorate([
+    (0, common_1.Get)("transcript-by-type"),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], StudentRecordsController.prototype, "getStudentTranscriptByType", null);
 __decorate([
     (0, common_1.Get)("semester/:semester"),
     __param(0, (0, common_1.Req)()),

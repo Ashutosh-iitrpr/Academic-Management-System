@@ -1,0 +1,66 @@
+Replace the mock getTranscriptByEntry method with this real implementation:
+
+  @Get("transcript/entry/:entryNumber")
+  async getTranscriptByEntry(@Param("entryNumber") entryNumber: string) {
+    // Find student by entry number
+    const student = await this.prisma.user.findUnique({
+      where: { entryNumber },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        entryNumber: true,
+      },
+    });
+
+    if (!student) {
+      throw new NotFoundException(`Student with entry number ${entryNumber} not found`);
+    }
+
+    // Fetch all enrollments for this student
+    const enrollments = await this.prisma.enrollment.findMany({
+      where: { studentId: student.id },
+      include: {
+        courseOffering: {
+          include: {
+            course: {
+              select: {
+                id: true,
+                code: true,
+                name: true,
+                credits: true,
+              },
+            },
+            instructor: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: "asc" },
+    });
+
+    return {
+      id: student.id,
+      name: student.name,
+      email: student.email,
+      entrynumber: student.entryNumber,
+      enrollments: enrollments.map(e => ({
+        id: e.id,
+        status: e.status,
+        grade: e.grade,
+        courseOffering: {
+          course: {
+            name: e.courseOffering.course.name,
+            code: e.courseOffering.course.code,
+            credits: e.courseOffering.course.credits,
+          },
+          instructor: {
+            name: e.courseOffering.instructor.name,
+          },
+        },
+      })),
+    };
+  }

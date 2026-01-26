@@ -55,7 +55,7 @@ interface StudentTranscript {
   minor?: Enrollment[];
 }
 
-const TranscriptLookupPage = () => {
+const InstructorStudentsPage = () => {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
@@ -76,8 +76,8 @@ const TranscriptLookupPage = () => {
       setError('');
       setSearchAttempted(true);
 
-      // Try to search by entry number first
-      const response = await axiosClient.get(`/admin/transcript/entry/${searchQuery}`);
+      // Try to search by entry number
+      const response = await axiosClient.get(`/instructor/transcript/entry/${searchQuery}`);
       setTranscript(response.data);
     } catch (err) {
       setError('Student not found. Please check the entry number and try again.');
@@ -155,6 +155,10 @@ const TranscriptLookupPage = () => {
 
   const handleDownloadTranscript = () => {
     if (!transcript) return;
+
+    const mainDegree = transcript.mainDegree || [];
+    const concentration = transcript.concentration || [];
+    const minor = transcript.minor || [];
 
     // Create HTML content for PDF
     let htmlContent = `
@@ -247,10 +251,10 @@ const TranscriptLookupPage = () => {
 
     const addSection = (
       title: string,
-      enrollments: Enrollment[],
+      sectionEnrollments: Enrollment[],
       className: string
     ) => {
-      if (enrollments.length === 0) {
+      if (sectionEnrollments.length === 0) {
         htmlContent += `<div class="section-title ${className}">${title}</div>`;
         htmlContent += `<div class="empty-section">No enrollments in this category</div>`;
         return;
@@ -258,10 +262,10 @@ const TranscriptLookupPage = () => {
 
       htmlContent += `<div class="section-title ${className}">${title}</div>`;
       htmlContent += `<div class="section-stats">GPA: ${calculateGPA(
-        enrollments
-      )} | Credits Earned: ${calculateCredits(enrollments)}</div>`;
+        sectionEnrollments
+      )} | Credits Earned: ${calculateCredits(sectionEnrollments)}</div>`;
 
-      const grouped = groupBySemester(enrollments);
+      const grouped = groupBySemester(sectionEnrollments);
       const semesters = Object.keys(grouped).sort();
 
       semesters.forEach((semester) => {
@@ -301,26 +305,20 @@ const TranscriptLookupPage = () => {
       });
     };
 
-    addSection('MAIN DEGREE', transcript.mainDegree || [], 'section-main');
-    addSection(
-      'CONCENTRATION',
-      transcript.concentration || [],
-      'section-concentration'
-    );
-    addSection('MINOR', transcript.minor || [], 'section-minor');
+    addSection('MAIN DEGREE', mainDegree, 'section-main');
+    addSection('CONCENTRATION', concentration, 'section-concentration');
+    addSection('MINOR', minor, 'section-minor');
 
     htmlContent += `
       </body>
       </html>
     `;
 
-    // Create blob and download
-    const blob = new Blob([htmlContent], { type: 'text/html' });
-    const url = window.URL.createObjectURL(blob);
-    
     // Open in new window for printing to PDF
-    const printWindow = window.open(url, '_blank');
+    const printWindow = window.open('', '_blank');
     if (printWindow) {
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
       printWindow.onload = () => {
         printWindow.print();
       };
@@ -328,14 +326,14 @@ const TranscriptLookupPage = () => {
   };
 
   return (
-    <ProtectedRoute requiredRole="ADMIN">
-      <DashboardLayout pageTitle="Student Transcript">
+    <ProtectedRoute requiredRole="INSTRUCTOR">
+      <DashboardLayout pageTitle="Student Transcripts">
         <Box sx={{ mb: 4 }}>
           {/* Header */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
             <DescriptionIcon sx={{ fontSize: 28, color: '#8B3A3A' }} />
             <Typography variant="h5" sx={{ fontWeight: 700, color: '#1a1a1a' }}>
-              Student Transcript
+              Student Transcripts
             </Typography>
           </Box>
 
@@ -345,7 +343,7 @@ const TranscriptLookupPage = () => {
               <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                 <TextField
                   fullWidth
-                  placeholder="Enter student entry number or ID..."
+                  placeholder="Enter student entry number..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyPress={handleKeyPress}
@@ -384,12 +382,6 @@ const TranscriptLookupPage = () => {
           {/* Transcript Display */}
           {transcript && (
             <>
-              {(() => {
-                const mainDegree = transcript.mainDegree || [];
-                const concentration = transcript.concentration || [];
-                const minor = transcript.minor || [];
-                return null;
-              })()}
               {/* Student Info */}
               <Grid container spacing={2} sx={{ mb: 3 }}>
                 <Grid item xs={12}>
@@ -410,11 +402,11 @@ const TranscriptLookupPage = () => {
                         <Box sx={{ display: 'flex', gap: 1 }}>
                           <Button
                             startIcon={<DownloadIcon />}
-                            variant="outlined"
-                            size="small"
+                            variant="contained"
+                            sx={{ backgroundColor: '#8B3A3A' }}
                             onClick={handleDownloadTranscript}
                           >
-                            Download
+                            Download PDF
                           </Button>
                         </Box>
                       </Box>
@@ -667,4 +659,4 @@ const TranscriptLookupPage = () => {
   );
 };
 
-export default TranscriptLookupPage;
+export default InstructorStudentsPage;

@@ -87,7 +87,7 @@ const navigationItems: NavigationItem[] = [
     roles: ['ADMIN'],
   },
   {
-    label: 'Transcript Lookup',
+    label: 'Student Transcript',
     path: '/admin/transcript',
     icon: <DescriptionIcon />,
     roles: ['ADMIN'],
@@ -141,6 +141,12 @@ const navigationItems: NavigationItem[] = [
     icon: <ChatIcon />,
     roles: ['INSTRUCTOR'],
   },
+  {
+    label: 'Student Transcripts',
+    path: '/instructor/students',
+    icon: <DescriptionIcon />,
+    roles: ['INSTRUCTOR'],
+  },
   // Student items
   {
     label: 'Course Catalog',
@@ -161,7 +167,7 @@ const navigationItems: NavigationItem[] = [
     roles: ['STUDENT'],
   },
   {
-    label: 'Academic Record',
+    label: 'Student Transcript',
     path: '/student/record',
     icon: <DescriptionIcon />,
     roles: ['STUDENT'],
