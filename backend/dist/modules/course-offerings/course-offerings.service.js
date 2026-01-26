@@ -111,6 +111,44 @@ let CourseOfferingsService = class CourseOfferingsService {
         }
         return semesters;
     }
+    async getGradeDistribution(offeringId) {
+        const offering = await this.prisma.courseOffering.findUnique({
+            where: { id: offeringId },
+        });
+        if (!offering) {
+            throw new common_2.NotFoundException("Course offering not found");
+        }
+        if (offering.status !== client_1.CourseOfferingStatus.COMPLETED) {
+            throw new common_2.BadRequestException("Grade distribution available after course completion");
+        }
+        const grouped = await this.prisma.enrollment.groupBy({
+            by: ["grade"],
+            where: {
+                courseOfferingId: offeringId,
+                grade: { not: null },
+            },
+            _count: { grade: true },
+        });
+        const total = grouped.reduce((sum, g) => sum + g._count.grade, 0);
+        const order = [
+            client_1.Grade.A,
+            client_1.Grade.A_MINUS,
+            client_1.Grade.B,
+            client_1.Grade.B_MINUS,
+            client_1.Grade.C,
+            client_1.Grade.C_MINUS,
+            client_1.Grade.D,
+            client_1.Grade.E,
+            client_1.Grade.F,
+        ];
+        const distribution = order.map((grade) => {
+            const found = grouped.find((g) => g.grade === grade);
+            const count = found?._count.grade || 0;
+            const percentage = total ? Number(((count / total) * 100).toFixed(1)) : 0;
+            return { grade, count, percentage };
+        });
+        return { total, distribution };
+    }
     async requestOffering(instructorId, dto) {
         if (!dto.courseCode?.trim() && !dto.courseId?.trim()) {
             throw new common_2.BadRequestException("courseCode is required");

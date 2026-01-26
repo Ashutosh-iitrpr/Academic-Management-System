@@ -30,6 +30,9 @@ import {
   RadioGroup,
   FormControlLabel,
   Radio,
+  IconButton,
+  Tooltip,
+  Divider,
 } from '@mui/material';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import ProtectedRoute from '@/lib/routes/ProtectedRoute';
@@ -37,10 +40,19 @@ import LoadingSkeleton from '@/components/ui/LoadingSkeleton';
 import StatusChip from '@/components/ui/StatusChip';
 import studentApi from '@/lib/api/studentApi';
 import { toast } from 'sonner';
+import {
+  ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
+  ChartTooltip,
+  ChartTooltipContent,
+} from '@/components/ui/chart';
+import { Pie, PieChart, Cell } from 'recharts';
 
 // Icons
 import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
+import InsightsIcon from '@mui/icons-material/Insights';
 
 interface CourseOfferingDisplay {
   id: string;
@@ -69,6 +81,12 @@ interface EnrollmentRecord {
   };
 }
 
+interface GradeSlice {
+  grade: string;
+  count: number;
+  percentage: number;
+}
+
 const StudentOfferingsPage = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -80,6 +98,11 @@ const StudentOfferingsPage = () => {
   const [enrollmentTypeDialogOpen, setEnrollmentTypeDialogOpen] = useState(false);
   const [selectedOfferingForEnrollment, setSelectedOfferingForEnrollment] = useState<CourseOfferingDisplay | null>(null);
   const [selectedEnrollmentType, setSelectedEnrollmentType] = useState<'CREDIT' | 'CREDIT_CONCENTRATION' | 'CREDIT_MINOR'>('CREDIT');
+  const [gradeDialogOpen, setGradeDialogOpen] = useState(false);
+  const [selectedOfferingForGrades, setSelectedOfferingForGrades] = useState<CourseOfferingDisplay | null>(null);
+  const [gradeDistribution, setGradeDistribution] = useState<GradeSlice[]>([]);
+  const [totalEnrollments, setTotalEnrollments] = useState(0);
+  const [gradeStatsLoading, setGradeStatsLoading] = useState(false);
 
   useEffect(() => {
     const fetchOfferings = async () => {
@@ -178,6 +201,23 @@ const StudentOfferingsPage = () => {
     setSelectedOfferingForEnrollment(offering);
     setSelectedEnrollmentType('CREDIT');
     setEnrollmentTypeDialogOpen(true);
+  };
+
+  const openGradeDistribution = async (offering: CourseOfferingDisplay) => {
+    setSelectedOfferingForGrades(offering);
+    setGradeDialogOpen(true);
+    setGradeStatsLoading(true);
+    try {
+      const data = await studentApi.getGradeDistribution(offering.id);
+      setGradeDistribution(data.distribution);
+      setTotalEnrollments(data.total);
+    } catch (err: any) {
+      console.error('Failed to load grade distribution', err);
+      toast.error(err?.response?.data?.message || 'Could not load grade distribution');
+      setGradeDialogOpen(false);
+    } finally {
+      setGradeStatsLoading(false);
+    }
   };
 
   const handleEnrollmentTypeConfirm = async () => {
@@ -409,12 +449,27 @@ const StudentOfferingsPage = () => {
                         <TableCell>{offering.instructor}</TableCell>
                         <TableCell>{offering.timeSlot}</TableCell>
                         <TableCell>
-                          <Chip
-                            label={offering.status}
-                            color={getStatusColor(offering.status)}
-                            size="small"
-                            variant="outlined"
-                          />
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Chip
+                              label={offering.status}
+                              color={getStatusColor(offering.status)}
+                              size="small"
+                              variant="outlined"
+                            />
+                            {offering.status === 'COMPLETED' && (
+                              <Tooltip title="View grade distribution">
+                                <span>
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => openGradeDistribution(offering)}
+                                    disabled={gradeStatsLoading && selectedOfferingForGrades?.id === offering.id}
+                                  >
+                                    <InsightsIcon fontSize="small" />
+                                  </IconButton>
+                                </span>
+                              </Tooltip>
+                            )}
+                          </Box>
                         </TableCell>
                         <TableCell>
                           <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
@@ -464,6 +519,88 @@ const StudentOfferingsPage = () => {
               </Box>
             </Card>
           )}
+
+        {/* Grade Distribution Dialog */}
+        <Dialog open={gradeDialogOpen} onClose={() => setGradeDialogOpen(false)} maxWidth="sm" fullWidth>
+          <DialogTitle sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <InsightsIcon sx={{ color: '#8B3A3A' }} />
+            Grade Distribution
+          </DialogTitle>
+          <Divider />
+          <DialogContent sx={{ pt: 3 }}>
+            {selectedOfferingForGrades && (
+              <>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                  {selectedOfferingForGrades.courseCode} - {selectedOfferingForGrades.courseName}
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#666', mb: 1 }}>
+                  Instructor: {selectedOfferingForGrades.instructor}
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#666', fontWeight: 600, mb: 3 }}>
+                  Total Students Enrolled: {totalEnrollments}
+                </Typography>
+              </>
+            )}
+
+            {gradeStatsLoading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                <CircularProgress />
+              </Box>
+            ) : gradeDistribution.length > 0 ? (
+              <Box>
+                {/* Pie Chart */}
+                <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
+                  <ChartContainer
+                    config={{
+                      count: { label: 'Count' },
+                    }}
+                    className="w-full"
+                  >
+                    <PieChart width={350} height={250} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Pie
+                        data={gradeDistribution.filter((g) => g.count > 0).map((g) => ({
+                          name: g.grade,
+                          value: g.count,
+                        }))}
+                        cx={175}
+                        cy={125}
+                        labelLine={false}
+                        label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {[
+                          '#2E7D32',
+                          '#558B2F',
+                          '#7CB342',
+                          '#1976D2',
+                          '#42A5F5',
+                          '#FFA726',
+                          '#F57C00',
+                          '#D32F2F',
+                          '#C62828',
+                        ].map((color, index) => (
+                          <Cell key={`cell-${index}`} fill={color} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ChartContainer>
+                </Box>
+              </Box>
+            ) : (
+              <Typography variant="body2" sx={{ color: '#999' }}>
+                No grade distribution data available.
+              </Typography>
+            )}
+          </DialogContent>
+          <DialogActions sx={{ p: 2 }}>
+            <Button onClick={() => setGradeDialogOpen(false)} variant="contained" sx={{ backgroundColor: '#8B3A3A' }}>
+              Close
+            </Button>
+          </DialogActions>
+        </Dialog>
 
         {/* Enrollment Type Selection Dialog */}
         <Dialog open={enrollmentTypeDialogOpen} onClose={() => setEnrollmentTypeDialogOpen(false)} maxWidth="sm" fullWidth>

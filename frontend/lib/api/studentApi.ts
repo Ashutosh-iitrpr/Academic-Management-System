@@ -170,6 +170,16 @@ export const studentApi = {
     return response.data;
   },
 
+  /**
+   * Get grade distribution for a completed course offering
+   */
+  getGradeDistribution: async (
+    offeringId: string,
+  ): Promise<{ total: number; distribution: { grade: string; count: number; percentage: number }[] }> => {
+    const response = await api.get(`/student/course-offerings/${offeringId}/grade-distribution`);
+    return response.data;
+  },
+
   // ========== ENROLLMENTS ==========
   /**
    * Get all enrollments for the current student

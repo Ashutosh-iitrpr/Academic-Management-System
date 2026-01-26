@@ -7,7 +7,7 @@ import {
   ForbiddenException,
   NotFoundException,
 } from "@nestjs/common";
-import { CourseOfferingStatus, EnrollmentStatus } from "@prisma/client";
+import { CourseOfferingStatus, EnrollmentStatus, Grade } from "@prisma/client";
 
 @Injectable()
 export class CourseOfferingsService {
@@ -108,6 +108,52 @@ export class CourseOfferingsService {
       }
     }
     return semesters;
+  }
+
+  async getGradeDistribution(offeringId: string) {
+    const offering = await this.prisma.courseOffering.findUnique({
+      where: { id: offeringId },
+    });
+
+    if (!offering) {
+      throw new NotFoundException("Course offering not found");
+    }
+
+    if (offering.status !== CourseOfferingStatus.COMPLETED) {
+      throw new BadRequestException("Grade distribution available after course completion");
+    }
+
+    // Group enrollments by grade
+    const grouped = await this.prisma.enrollment.groupBy({
+      by: ["grade"],
+      where: {
+        courseOfferingId: offeringId,
+        grade: { not: null },
+      },
+      _count: { grade: true },
+    });
+
+    const total = grouped.reduce((sum, g) => sum + g._count.grade, 0);
+    const order: Grade[] = [
+      Grade.A,
+      Grade.A_MINUS,
+      Grade.B,
+      Grade.B_MINUS,
+      Grade.C,
+      Grade.C_MINUS,
+      Grade.D,
+      Grade.E,
+      Grade.F,
+    ];
+
+    const distribution = order.map((grade) => {
+      const found = grouped.find((g) => g.grade === grade);
+      const count = found?._count.grade || 0;
+      const percentage = total ? Number(((count / total) * 100).toFixed(1)) : 0;
+      return { grade, count, percentage };
+    });
+
+    return { total, distribution };
   }
 
   // ✅ THIS METHOD MUST EXIST

@@ -31,6 +31,9 @@ let CourseOfferingsController = class CourseOfferingsController {
     getInstructorCourseOfferings(req) {
         return this.courseOfferingsService.getForInstructor(req.user.userId);
     }
+    getGradeDistribution(offeringId) {
+        return this.courseOfferingsService.getGradeDistribution(offeringId);
+    }
     requestOffering(dto, req) {
         return this.courseOfferingsService.requestOffering(req.user.userId, dto);
     }
@@ -73,6 +76,14 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], CourseOfferingsController.prototype, "getInstructorCourseOfferings", null);
+__decorate([
+    (0, common_1.Get)("student/course-offerings/:id/grade-distribution"),
+    (0, roles_decorator_1.Roles)("STUDENT"),
+    __param(0, (0, common_2.Param)("id")),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], CourseOfferingsController.prototype, "getGradeDistribution", null);
 __decorate([
     (0, common_1.Post)("instructor/course-offerings"),
     (0, roles_decorator_1.Roles)("INSTRUCTOR"),

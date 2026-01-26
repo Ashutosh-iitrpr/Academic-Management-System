@@ -37,6 +37,13 @@ export class CourseOfferingsController {
     return this.courseOfferingsService.getForInstructor(req.user.userId);
   }
 
+  // Grade distribution for students on completed offerings
+  @Get("student/course-offerings/:id/grade-distribution")
+  @Roles("STUDENT")
+  getGradeDistribution(@Param("id") offeringId: string) {
+    return this.courseOfferingsService.getGradeDistribution(offeringId);
+  }
+
   @Post("instructor/course-offerings")
   @Roles("INSTRUCTOR")
   requestOffering(
