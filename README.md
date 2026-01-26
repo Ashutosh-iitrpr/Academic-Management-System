@@ -20,6 +20,7 @@ A full-stack application built with **NestJS** (backend) and **Next.js** (fronte
 - **TypeScript** - Type-safe development
 - **Material-UI (MUI)** - Component library
 - **Axios** - HTTP client
+- **PDF.js** - PDF viewing and rendering (requires manual download)
 
 ## Features
 
@@ -105,6 +106,12 @@ npm install
 # Set up environment variables
 cp .env.local.example .env.local
 # Edit .env.local with backend API URL
+
+# Download PDF.js library (required for PDF viewing functionality)
+# This needs to be done manually - download the distribution from:
+# https://mozilla.github.io/pdf.js/getting_started/#download
+# Extract the files and place them in the public/pdfjs folder
+# The structure should be: public/pdfjs/build/pdf.js, pdf.worker.js, etc.
 
 # Start development server
 npm run dev
@@ -241,6 +248,15 @@ Instructors can enroll entire batches by:
 - GPA calculation based on weighted credit hours
 
 ## Common Issues & Solutions
+
+### PDF.js Setup
+PDF.js is required for PDF viewing functionality and must be manually downloaded:
+1. Visit https://mozilla.github.io/pdf.js/getting_started/#download
+2. Download the latest stable build
+3. Extract the distribution files
+4. Create a folder: `frontend/public/pdfjs/`
+5. Copy the extracted files (especially `build/pdf.js` and `build/pdf.worker.js`) to the `pdfjs` folder
+6. Restart the frontend development server
 
 ### Prisma Schema Changes
 After merging changes to `schema.prisma`:
